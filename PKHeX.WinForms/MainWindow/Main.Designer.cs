@@ -30,6 +30,7 @@ namespace PKHeX.WinForms
         public void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             menuStrip1 = new System.Windows.Forms.MenuStrip();
             Menu_File = new System.Windows.Forms.ToolStripMenuItem();
             Menu_Open = new System.Windows.Forms.ToolStripMenuItem();
@@ -59,13 +60,15 @@ namespace PKHeX.WinForms
             Menu_Redo = new System.Windows.Forms.ToolStripMenuItem();
             Menu_Settings = new System.Windows.Forms.ToolStripMenuItem();
             Menu_About = new System.Windows.Forms.ToolStripMenuItem();
+            exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            exportDexToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             L_UpdateAvailable = new System.Windows.Forms.LinkLabel();
             toolTip = new System.Windows.Forms.ToolTip(components);
             splitContainer1 = new System.Windows.Forms.SplitContainer();
-            dragout = new Controls.SelectablePictureBox();
+            dragout = new PKHeX.WinForms.Controls.SelectablePictureBox();
             PB_Legal = new System.Windows.Forms.PictureBox();
-            PKME_Tabs = new Controls.PKMEditor();
-            C_SAV = new Controls.SAVEditor();
+            PKME_Tabs = new PKHeX.WinForms.Controls.PKMEditor();
+            C_SAV = new PKHeX.WinForms.Controls.SAVEditor();
             splitContainer2 = new System.Windows.Forms.SplitContainer();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -85,7 +88,7 @@ namespace PKHeX.WinForms
             menuStrip1.AccessibleDescription = "Main Window Menustrip";
             menuStrip1.AccessibleName = "Main Window Menustrip";
             menuStrip1.BackColor = System.Drawing.Color.Transparent;
-            menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { Menu_File, Menu_Tools, Menu_Options });
+            menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { Menu_File, Menu_Tools, Menu_Options, exportToolStripMenuItem });
             menuStrip1.Location = new System.Drawing.Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Padding = new System.Windows.Forms.Padding(7, 2, 0, 2);
@@ -347,6 +350,20 @@ namespace PKHeX.WinForms
             Menu_About.Text = "About &PKHeX";
             Menu_About.Click += MainMenuAbout;
             // 
+            // exportToolStripMenuItem
+            // 
+            exportToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { exportDexToolStripMenuItem });
+            exportToolStripMenuItem.Name = "exportToolStripMenuItem";
+            exportToolStripMenuItem.Size = new System.Drawing.Size(53, 20);
+            exportToolStripMenuItem.Text = "Export";
+            // 
+            // exportDexToolStripMenuItem
+            // 
+            exportDexToolStripMenuItem.Name = "exportDexToolStripMenuItem";
+            exportDexToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
+            exportDexToolStripMenuItem.Text = "Export Dex";
+            exportDexToolStripMenuItem.Click += exportDexToolStripMenuItem_Click;
+            // 
             // L_UpdateAvailable
             // 
             L_UpdateAvailable.AccessibleDescription = "If an update is available, link label can be clicked to open new download link.";
@@ -546,6 +563,8 @@ namespace PKHeX.WinForms
         private System.Windows.Forms.SplitContainer splitContainer2;
         private PKHeX.WinForms.Controls.SelectablePictureBox dragout;
         private System.Windows.Forms.PictureBox PB_Legal;
+        private System.Windows.Forms.ToolStripMenuItem exportToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportDexToolStripMenuItem;
     }
 }
 
