@@ -45,7 +45,7 @@ public sealed class LearnsetStadium
     /// </summary>
     /// <param name="move">Move ID</param>
     /// <param name="level">Current level of the Pokémon.</param>
-    /// <returns></returns>
+    /// <returns>True if the move can be known at the requested level.</returns>
     public bool CanKnow(ushort move, byte level) => TryGetMove(move, out var result) && result.Level <= level;
 
     /// <summary>
@@ -116,7 +116,7 @@ public sealed class LearnsetStadium
     /// <summary>
     /// Converts a <see cref="BinLinkerAccessor"/> into an array of <see cref="LearnsetStadium"/>.
     /// </summary>
-    public static LearnsetStadium[] GetArray(BinLinkerAccessor entries)
+    public static LearnsetStadium[] GetArray(BinLinkerAccessor16 entries)
     {
         var result = new LearnsetStadium[entries.Length];
         for (int i = 0; i < entries.Length; i++)

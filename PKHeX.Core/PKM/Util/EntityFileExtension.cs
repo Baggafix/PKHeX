@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Logic for interacting with Entity file extensions.
+/// </summary>
 public static class EntityFileExtension
 {
     // All side-game formats that don't follow the usual pk* format
@@ -14,6 +17,7 @@ public static class EntityFileExtension
     private const string ExtensionPB7 = "pb7";
     private const string ExtensionPB8 = "pb8";
     private const string ExtensionPA8 = "pa8";
+    private const string ExtensionPA9 = "pa9";
     private const int CountExtra = 8;
 
     /// <summary>
@@ -26,7 +30,7 @@ public static class EntityFileExtension
     /// </summary>
     /// <param name="maxGeneration">Maximum Generation to permit</param>
     /// <returns>Valid <see cref="PKM"/> file extensions.</returns>
-    public static string[] GetExtensions(int maxGeneration = PKX.Generation)
+    public static string[] GetExtensions(byte maxGeneration = Latest.Generation)
     {
         int min = maxGeneration is <= 2 or >= 7 ? 1 : 3;
         int size = maxGeneration - min + 1 + CountExtra;
@@ -52,6 +56,8 @@ public static class EntityFileExtension
             result.Add(ExtensionPB8); // Brilliant Diamond & Shining Pearl
         if (maxGeneration >= 8)
             result.Add(ExtensionPA8); // Legends: Arceus
+        if (maxGeneration >= 9)
+            result.Add(ExtensionPA9); // Legends: Z-A
 
         return [.. result];
     }
@@ -68,6 +74,7 @@ public static class EntityFileExtension
             return prefer;
 
         static bool Is(ReadOnlySpan<char> ext, ReadOnlySpan<char> str) => ext.EndsWith(str, StringComparison.InvariantCultureIgnoreCase);
+        if (Is(ext, "a9")) return EntityContext.Gen9a;
         if (Is(ext, "a8")) return EntityContext.Gen8a;
         if (Is(ext, "b8")) return EntityContext.Gen8b;
         if (Is(ext, "k8")) return EntityContext.Gen8;
@@ -88,7 +95,7 @@ public static class EntityFileExtension
     {
         if (last is >= '1' and <= '9')
             return last - '0';
-        if (prefer.Generation() <= 7 && last == 'x')
+        if (prefer.Generation <= 7 && last == 'x')
             return 6;
         return (int)prefer;
     }
@@ -96,11 +103,11 @@ public static class EntityFileExtension
     public static IReadOnlyList<string> Extensions7b => [ExtensionPB7];
     public static IReadOnlyList<string> GetExtensionsAll() => Extensions;
     public static IReadOnlyList<string> GetExtensionsHOME() => Extensions;
-    public static IReadOnlyList<string> GetExtensionsAtOrBelow(int specific)
+    public static IReadOnlyList<string> GetExtensionsAtOrBelow(byte specific)
         => Array.FindAll(Extensions, f => IsAtOrBelow(f, specific));
-    public static IReadOnlyList<string> GetExtensionsAtOrBelow(int specific, string exclude)
+    public static IReadOnlyList<string> GetExtensionsAtOrBelow(byte specific, string exclude)
         => Array.FindAll(Extensions, f => IsAtOrBelow(f, specific) && !exclude.Contains(f));
-    private static bool IsAtOrBelow(ReadOnlySpan<char> ext, int specific)
+    private static bool IsAtOrBelow(ReadOnlySpan<char> ext, byte specific)
         => IsAtOrBelow(specific, ext[^1] - 0x30);
-    private static bool IsAtOrBelow(int specific, int gen) => gen <= specific;
+    private static bool IsAtOrBelow(byte specific, int gen) => gen <= specific;
 }

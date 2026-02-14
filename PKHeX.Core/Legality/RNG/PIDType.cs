@@ -83,10 +83,10 @@ public enum PIDType : byte
     BACD_R_A,
     /// <summary> Event Reversed Order PID restricted to [0,213] Origin Seed, shiny </summary>
     BACD_RBCD,
-    /// <summary> Event Reversed Order PID with Origin Seed restrictions, consuming 2 calls to the RNG before the PID is generated. </summary>
-    BACD_T2,
-    /// <summary> Event Reversed Order PID with Origin Seed restrictions, consuming 3 calls to the RNG before the PID is generated. </summary>
-    BACD_T3,
+    /// <summary> Event Reversed Order PID restricted to 16bit Origin Seed, consuming 2 calls select the event gift index, anti-shiny. </summary>
+    BACD_TA,
+    /// <summary> Event Reversed Order PID restricted to 16bit Origin Seed, consuming 2 calls select the event gift index, force-shiny. </summary>
+    BACD_TS,
     /// <summary> Event Reversed Order PID with Origin Seed restrictions, only using the Mystry Mew table. </summary>
     BACD_M,
 
@@ -195,14 +195,16 @@ public enum PIDType : byte
 
 public static class PIDTypeExtensions
 {
-    /// <summary>
-    /// Checks if the provided PIDType is one of the in-game Method-X types for Gen3.
-    /// </summary>
-    public static bool IsClassicMethod(this PIDType type) => type
-        is Method_1 or Method_2 or Method_3 or Method_4
-        or Method_1_Unown or Method_2_Unown or Method_3_Unown or Method_4_Unown;
+    extension(PIDType type)
+    {
+        /// <summary>
+        /// Checks if the provided PIDType is one of the in-game Method-X types for Gen3.
+        /// </summary>
+        public bool IsClassicMethod => type
+            is Method_1 or Method_2 or Method_3 or Method_4
+            or Method_1_Unown or Method_2_Unown or Method_3_Unown or Method_4_Unown;
 
-    public static bool IsRestricted(this PIDType type) => type is >= BACD_R and <= BACD_M;
-
-    public static bool IsUnown(this PIDType type) => type is Method_1_Unown or Method_2_Unown or Method_3_Unown or Method_4_Unown;
+        public bool IsRestricted => type is >= BACD_R and <= BACD_M;
+        public bool IsUnown => type is Method_1_Unown or Method_2_Unown or Method_3_Unown or Method_4_Unown;
+    }
 }

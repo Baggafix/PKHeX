@@ -19,7 +19,6 @@ public partial class SAV_FolderList : Form
     private readonly List<INamedFolderPath> Paths;
     private readonly SortableBindingList<SavePreview> Recent;
     private readonly SortableBindingList<SavePreview> Backup;
-    private readonly List<Label> TempTranslationLabels = [];
     private readonly CancellationTokenSource cts = new(TimeSpan.FromSeconds(20));
 
     public SAV_FolderList(Action<SaveFile> openSaveFile)
@@ -43,10 +42,12 @@ public partial class SAV_FolderList : Form
         var recent = SaveFinder.GetSaveFiles(drives, false, extra, true, token).ToList();
         var loaded = Main.Settings.Startup.RecentlyLoaded
             .Where(z => recent.All(x => x.Metadata.FilePath != z))
-            .Where(File.Exists).Select(SaveUtil.GetVariantSAV).OfType<SaveFile>();
+            .Where(File.Exists).Select(SaveUtil.GetSaveFile).OfType<SaveFile>();
 
         Recent = PopulateData(dgDataRecent, loaded.Concat(recent));
         Backup = PopulateData(dgDataBackup, backup);
+
+        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
 
         CB_FilterColumn.Items.Add(MsgAny);
         var dgv = Recent.Count >= 1 ? dgDataRecent : dgDataBackup;
@@ -55,38 +56,28 @@ public partial class SAV_FolderList : Form
         {
             var text = dgv.Columns[i].HeaderText;
             CB_FilterColumn.Items.Add(text);
-            var tempLabel = new Label {Name = "DGV_" + text, Text = text, Visible = false};
-            Controls.Add(tempLabel);
-            TempTranslationLabels.Add(tempLabel);
         }
         CB_FilterColumn.SelectedIndex = 0;
-
-        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
-
-        // Update Translated headers
-        for (int i = 0; i < TempTranslationLabels.Count; i++)
-        {
-            var text = TempTranslationLabels[i].Text;
-            if (i < dgDataRecent.ColumnCount)
-                dgDataRecent.Columns[i].HeaderText = text;
-            if (i < dgDataBackup.ColumnCount)
-                dgDataBackup.Columns[i].HeaderText = text;
-            CB_FilterColumn.Items[i+1] = text;
-        }
 
         // Pre-programmed folders
         foreach (var loc in Paths)
             AddButton(loc.DisplayText, loc.Path);
 
         CenterToParent();
+
+        if (Application.IsDarkModeEnabled)
+        {
+            WinFormsUtil.InvertToolStripIcons(dgDataBackup.ContextMenuStrip.Items);
+            WinFormsUtil.InvertToolStripIcons(dgDataRecent.ContextMenuStrip.Items);
+        }
     }
 
     private static List<INamedFolderPath> GetPathList(IReadOnlyList<string> drives, string backupPath)
     {
         List<INamedFolderPath> locs =
         [
-            new CustomFolderPath(backupPath, display: "PKHeX Backups"),
-            ..GetUserPaths(), ..GetConsolePaths(drives), ..GetSwitchPaths(drives),
+            new CustomFolderPath(backupPath, DisplayText: "PKHeX Backups"),
+            ..GetUserPaths(), ..GetPaths3DS(drives), ..GetPathsSwitch(drives),
         ];
         var filtered = locs
             .DistinctBy(z => z.Path)
@@ -127,10 +118,10 @@ public partial class SAV_FolderList : Form
     private static IEnumerable<CustomFolderPath> GetUserPaths()
     {
         var paths = Main.Settings.Backup.OtherBackupPaths;
-        return paths.Select(x => new CustomFolderPath(x, true));
+        return paths.Select(x => new CustomFolderPath(x, FolderPathGroup.Custom));
     }
 
-    private static IEnumerable<CustomFolderPath> GetConsolePaths(IEnumerable<string> drives)
+    private static IEnumerable<CustomFolderPath> GetPaths3DS(IEnumerable<string> drives)
     {
         var path3DS = SaveFinder.Get3DSLocation(drives);
         if (path3DS is null)
@@ -141,10 +132,10 @@ public partial class SAV_FolderList : Form
             return [];
 
         var paths = SaveFinder.Get3DSBackupPaths(root);
-        return paths.Select(z => new CustomFolderPath(z));
+        return paths.Select(z => new CustomFolderPath(z, FolderPathGroup.Nintendo3DS));
     }
 
-    private static IEnumerable<CustomFolderPath> GetSwitchPaths(IEnumerable<string> drives)
+    private static IEnumerable<CustomFolderPath> GetPathsSwitch(IEnumerable<string> drives)
     {
         var pathNX = SaveFinder.GetSwitchLocation(drives);
         if (pathNX is null)
@@ -155,21 +146,13 @@ public partial class SAV_FolderList : Form
             return [];
 
         var paths = SaveFinder.GetSwitchBackupPaths(root);
-        return paths.Select(z => new CustomFolderPath(z));
+        return paths.Select(z => new CustomFolderPath(z, FolderPathGroup.NintendoSwitch));
     }
 
-    private sealed record CustomFolderPath : INamedFolderPath
+    private sealed record CustomFolderPath(string Path, string DisplayText, FolderPathGroup Group = 0) : INamedFolderPath
     {
-        public string Path { get; }
-        public string DisplayText { get; }
-        public bool Custom { get; }
-
-        public CustomFolderPath(string path, bool custom = false, string? display = null)
-        {
-            Path = path;
-            Custom = custom;
-            DisplayText = display ?? ResolveFolderName(path);
-        }
+        public CustomFolderPath(string path, FolderPathGroup group = 0)
+            : this(path, ResolveFolderName(path), group) { }
 
         private static string ResolveFolderName(string path)
         {
@@ -299,7 +282,7 @@ public partial class SAV_FolderList : Form
         foreach (var file in files)
         {
             var fi = new FileInfo(file);
-            if (!SaveUtil.IsSizeValid(fi.Length) || SaveUtil.GetVariantSAV(file) is not { } sav)
+            if (!SaveUtil.IsSizeValid(fi.Length) || !SaveUtil.TryGetSaveFile(file, out var sav))
             {
                 if (deleteNotSaves)
                     File.Delete(file);
@@ -398,6 +381,6 @@ public partial class SAV_FolderList : Form
             row.Visible = false;
             return;
         }
-        row.Visible = value.AsSpan().Contains(text, StringComparison.CurrentCultureIgnoreCase); // case insensitive contains
+        row.Visible = value.Contains(text, StringComparison.CurrentCultureIgnoreCase); // case insensitive contains
     }
 }

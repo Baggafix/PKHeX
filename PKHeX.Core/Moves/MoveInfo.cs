@@ -28,19 +28,20 @@ public static class MoveInfo
     /// </summary>
     public static ReadOnlySpan<byte> GetPPTable(EntityContext context) => context switch
     {
-        Gen1 => MoveInfo1.MovePP_RBY,
-        Gen2 => MoveInfo2.MovePP_GSC,
-        Gen3 => MoveInfo3.MovePP_RS,
-        Gen4 => MoveInfo4.MovePP_DP,
-        Gen5 => MoveInfo5.MovePP_BW,
-        Gen6 => MoveInfo6.MovePP,
-        Gen7 => MoveInfo7.MovePP_SM,
-        Gen8 => MoveInfo8.MovePP_SWSH,
-        Gen9 => MoveInfo9.MovePP_SV,
+        Gen1 => MoveInfo1.PP,
+        Gen2 => MoveInfo2.PP,
+        Gen3 => MoveInfo3.PP,
+        Gen4 => MoveInfo4.PP,
+        Gen5 => MoveInfo5.PP,
+        Gen6 => MoveInfo6.PP,
+        Gen7 => MoveInfo7.PP,
+        Gen8 => MoveInfo8.PP,
+        Gen9 => MoveInfo9.PP,
 
-        Gen7b => MoveInfo7b.MovePP_GG,
-        Gen8a => MoveInfo8a.MovePP_LA,
-        Gen8b => MoveInfo8.MovePP_SWSH,
+        Gen7b => MoveInfo7b.PP,
+        Gen8a => MoveInfo8a.PP,
+        Gen8b => MoveInfo8.PP,
+        Gen9a => MoveInfo9a.PP,
         _ => throw new ArgumentOutOfRangeException(nameof(context)),
     };
 
@@ -53,6 +54,7 @@ public static class MoveInfo
         Gen8a => MoveInfo8a.DummiedMoves,
         Gen8b => MoveInfo8b.DummiedMoves,
         Gen9 => MoveInfo9.DummiedMoves,
+        Gen9a => MoveInfo9a.DummiedMoves,
         _ => [],
     };
 
@@ -170,9 +172,6 @@ public static class MoveInfo
         (int)Struggle => false,
         (int)Chatter => false,
 
-        // Unreleased
-        (int)LightofRuin => false,
-
         _ => IsMoveKnowable(move),
     };
 
@@ -185,7 +184,7 @@ public static class MoveInfo
     {
         Gen2 when move is (int)SelfDestruct or (int)Explosion or (ushort)Mimic or (ushort)Metronome or (ushort)MirrorMove or (ushort)Transform or (ushort)SleepTalk => false,
         Gen6 when move is (int)ThousandArrows or (int)ThousandWaves or (int)LightofRuin => false,
-        Gen7 when move is (int)LightofRuin => false,
+        Gen7 or Gen8 when move is (int)LightofRuin => false,
         Gen8b when IsDummiedMove(MoveInfo8b.DummiedMoves, move) => false,
         Gen9 when IsDummiedMove(MoveInfo9.DummiedMoves, move) || DisallowSketch9.Contains(move) => false,
         _ => true,
@@ -197,6 +196,7 @@ public static class MoveInfo
     private static ReadOnlySpan<ushort> DisallowSketch9 =>
     [
         (ushort)DarkVoid,
+        (ushort)LightofRuin, // No backwards transfer from ZA
         (ushort)HyperspaceFury,
       //(ushort)BreakneckBlitzP, // 3.0.0 has this move set, but this move is disallowed with our other checks
         (ushort)RevivalBlessing,
@@ -222,14 +222,18 @@ public static class MoveInfo
         Gen8a => Legal.MaxMoveID_8a,
         Gen8b => Legal.MaxMoveID_8b,
         Gen9 => Legal.MaxMoveID_9,
+        Gen9a => Legal.MaxMoveID_9a,
         _ => -1,
     };
 
-    public static byte GetType(ushort move, EntityContext context) => context switch
+    public static byte GetType(ushort move, EntityContext context) => GetType(move, GetTypeTable(context));
+
+    public static ReadOnlySpan<byte> GetTypeTable(EntityContext context) => context switch
     {
-        Gen1 => GetType(move, MoveInfo1.MoveType_RBY), // Bite, Gust, Karate Chop, Sand Attack
-        >= Gen2 and <= Gen5 => GetType(move, MoveInfo5.MoveType_BW), // Charm, Moonlight, Sweet Kiss
-        _ => GetType(move, MoveInfo9.MoveType_SV),
+        Gen1 => MoveInfo1.Type, // Bite, Gust, Karate Chop, Sand Attack
+        >= Gen2 and <= Gen5 => MoveInfo5.Type, // Charm, Moonlight, Sweet Kiss
+        Gen9a => MoveInfo9a.Type, // Normal in S/V, Grass in Z-A
+        _ => MoveInfo9.Type,
     };
 
     private static byte GetType(ushort move, ReadOnlySpan<byte> types)

@@ -60,11 +60,11 @@ public sealed record EncounterStatic8a
     public PA8 ConvertToPKM(ITrainerInfo tr) => ConvertToPKM(tr, EncounterCriteria.Unrestricted);
     public PA8 ConvertToPKM(ITrainerInfo tr, EncounterCriteria criteria)
     {
-        int lang = (int)Language.GetSafeLanguage(Generation, (LanguageID)tr.Language);
+        int language = (int)Language.GetSafeLanguage789((LanguageID)tr.Language);
         var pi = PersonalTable.LA[Species, Form];
         var pk = new PA8
         {
-            Language = lang,
+            Language = language,
             Species = Species,
             Form = Form,
             CurrentLevel = LevelMin,
@@ -81,7 +81,7 @@ public sealed record EncounterStatic8a
 
             IsAlpha = IsAlpha,
             Ball = (byte)(FixedBall == Ball.None ? Ball.LAPoke : FixedBall),
-            Nickname = SpeciesName.GetSpeciesNameGeneration(Species, lang, Generation),
+            Nickname = SpeciesName.GetSpeciesNameGeneration(Species, language, Generation),
         };
 
         SetPINGA(pk, criteria);
@@ -90,7 +90,7 @@ public sealed record EncounterStatic8a
         return pk;
     }
 
-    private void SetPINGA(PA8 pk, EncounterCriteria criteria)
+    private void SetPINGA(PA8 pk, in EncounterCriteria criteria)
     {
         var para = GetParams();
         var (_, slotSeed) = Overworld8aRNG.ApplyDetails(pk, criteria, para, IsAlpha);
@@ -127,7 +127,7 @@ public sealed record EncounterStatic8a
         Finalize(pa8, slotSeed);
     }
 
-    private void SetEncounterMoves(PA8 pk, int level)
+    private void SetEncounterMoves(PA8 pk, byte level)
     {
         Span<ushort> moves = stackalloc ushort[4];
         var (learn, mastery) = GetLevelUpInfo();
@@ -140,7 +140,7 @@ public sealed record EncounterStatic8a
 
     public (Learnset Learn, Learnset Mastery) GetLevelUpInfo() => LearnSource8LA.GetLearnsetAndMastery(Species, Form);
 
-    public void LoadInitialMoveset(PA8 pa8, Span<ushort> moves, Learnset learn, int level)
+    public void LoadInitialMoveset(PA8 pa8, Span<ushort> moves, Learnset learn, byte level)
     {
         if (Moves.HasMoves)
             Moves.CopyTo(moves);
@@ -178,6 +178,8 @@ public sealed record EncounterStatic8a
     }
     #endregion
 
+    public bool IsAlpha127 => IsAlpha && HeightScalar == 127 && WeightScalar == 127;
+
     #region Matching
     public bool IsMatchExact(PKM pk, EvoCriteria evo)
     {
@@ -200,7 +202,8 @@ public sealed record EncounterStatic8a
             return true;
 
         // 3 of the Alpha statics were mistakenly set as 127 scale. If they enter HOME on 3.0.1, they'll get bumped to 255.
-        if (IsAlpha && this is { HeightScalar: 127, WeightScalar: 127 }) // Average Size Alphas
+        // Defer scale match to downstream checks; we are sufficiently confident this is the best-match.
+        if (IsAlpha127) // Average Size Alphas
         {
             // HOME >=3.0.1 ensures 255 scales for the 127's
             // PLA and S/V could have safe-harbored them via <=3.0.0
@@ -301,7 +304,7 @@ public sealed record EncounterStatic8a
     }
     #endregion
 
-    public bool TryGetSeed(PKM pk, out ulong seed)
+    public SeedCorrelationResult TryGetSeed(PKM pk, out ulong seed)
     {
         // Check if it matches any single-roll seed.
         var param = GetParams();
@@ -311,9 +314,9 @@ public sealed record EncounterStatic8a
             if (!Overworld8aRNG.Verify(pk, s, param, HasFixedHeight, HasFixedWeight))
                 continue;
             seed = s;
-            return true;
+            return SeedCorrelationResult.Success;
         }
         seed = 0;
-        return false;
+        return SeedCorrelationResult.Ignore;
     }
 }

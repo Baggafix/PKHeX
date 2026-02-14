@@ -1,5 +1,5 @@
 using System;
-using static PKHeX.Core.LegalityCheckStrings;
+using static PKHeX.Core.LegalityCheckResultCode;
 
 namespace PKHeX.Core;
 
@@ -18,13 +18,13 @@ public sealed class MovePPVerifier : Verifier
         VerifyEntity(data);
     }
 
-    private void VerifyEgg(LegalityAnalysis data)
+    private static void VerifyEgg(LegalityAnalysis data)
     {
         var pk = data.Entity;
         if (pk.Move1_PPUps != 0 || pk.Move2_PPUps != 0 || pk.Move3_PPUps != 0 || pk.Move4_PPUps != 0)
-            data.AddLine(GetInvalid(LEggPPUp, CheckIdentifier.Egg));
+            data.AddLine(GetInvalid(CheckIdentifier.Egg, EggPPUp));
         if (!IsZeroMovePP(pk))
-            data.AddLine(GetInvalid(LEggPP, CheckIdentifier.Egg));
+            data.AddLine(GetInvalid(CheckIdentifier.Egg, EggPP));
     }
 
     private static bool IsZeroMovePP(PKM pk)
@@ -47,37 +47,49 @@ public sealed class MovePPVerifier : Verifier
         ReadOnlySpan<ushort> moves = [pk.Move1, pk.Move2, pk.Move3, pk.Move4];
         ReadOnlySpan<int> pp = [pk.Move1_PP, pk.Move2_PP, pk.Move3_PP, pk.Move4_PP];
 
-        bool expectHeal = !data.IsStoredSlot(StorageSlotType.Party) && data.SlotOrigin switch
-        {
-            StorageSlotType.Box or StorageSlotType.GTS or StorageSlotType.BattleBox => GetIsStoredHealed(pk, data.EncounterOriginal),
-            _ => false, // Deposited slots pass through party.
-        };
-
         if (!Legal.IsPPUpAvailable(pk)) // No PP Ups for format
         {
             for (int i = 0; i < ups.Length; i++)
             {
-                if (ups[i] != 0)
-                    data.AddLine(GetInvalid(string.Format(LMovePPUpsTooHigh_0, i + 1)));
+                var value = ups[i];
+                if (value != 0)
+                    data.AddLine(GetInvalid(MovePPUpsTooHigh_01, (ushort)(i + 1), (ushort)value));
             }
         }
         else // Check specific move indexes
         {
             for (int i = 0; i < ups.Length; i++)
             {
-                if (!Legal.IsPPUpAvailable(moves[i]) && ups[i] != 0)
-                    data.AddLine(GetInvalid(string.Format(LMovePPUpsTooHigh_0, i + 1)));
+                var value = ups[i];
+                if (!Legal.IsPPUpAvailable(moves[i]) && value != 0)
+                    data.AddLine(GetInvalid(MovePPUpsTooHigh_01, (ushort)(i + 1), (ushort)value));
             }
         }
 
+        var expectHeal = Legal.IsPPUnused(pk) || IsPPHealed(data, pk);
         for (int i = 0; i < pp.Length; i++)
         {
+            // Sometimes the PP count will exceed (such as VC=>Bank); just flag it as invalid so the user knows they need to heal them.
+            // Technically that case is legal (game bug) only if they never move it from the box, but we want to inform the user.
             var expect = pk.GetMovePP(moves[i], ups[i]);
-            if (pp[i] > expect)
-                data.AddLine(GetInvalid(string.Format(LMovePPTooHigh_0, i + 1)));
-            else if (expectHeal && pp[i] != expect)
-                data.AddLine(GetInvalid(string.Format(LMovePPExpectHealed_0, i + 1)));
+            var value = pp[i];
+            if (value > expect)
+                data.AddLine(GetInvalid(MovePPTooHigh_01, (ushort)(i + 1), (ushort)value));
+            else if (expectHeal && value != expect)
+                data.AddLine(GetInvalid(MovePPExpectHealed_01, (ushort)(i + 1), (ushort)value));
         }
+    }
+
+    private static bool IsPPHealed(LegalityAnalysis data, PKM pk)
+    {
+        if (data.IsStoredSlot(StorageSlotType.Party))
+            return false;
+
+        return data.SlotOrigin switch
+        {
+            StorageSlotType.Box or StorageSlotType.GTS or StorageSlotType.BattleBox => GetIsStoredHealed(pk, data.EncounterOriginal),
+            _ => false, // Deposited slots pass through party.
+        };
     }
 
     /// <summary>

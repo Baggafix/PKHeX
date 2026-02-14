@@ -1,4 +1,5 @@
 using System;
+using static PKHeX.Core.RandomCorrelationRating;
 
 namespace PKHeX.Core;
 
@@ -30,12 +31,12 @@ public sealed record EncounterGift3Colo : IEncounterable, IEncounterMatch, IEnco
     public required ushort TID16 { get; init; }
     public required byte OriginalTrainerGender { get; init; }
 
-    public EncounterGift3Colo(ushort species, byte level, ReadOnlyMemory<string> trainers, GameVersion game)
+    public EncounterGift3Colo(ushort species, byte level, ReadOnlyMemory<string> trainers, GameVersion version)
     {
         Species = species;
         Level = level;
         TrainerNames = trainers;
-        Version = game;
+        Version = version;
     }
 
     public string Name => "Gift Encounter";
@@ -84,22 +85,23 @@ public sealed record EncounterGift3Colo : IEncounterable, IEncounterMatch, IEnco
     {
         if (IsJapaneseBonusDisk)
             return 1; // Japanese
-        return (int)Language.GetSafeLanguage(Generation, (LanguageID)tr.Language);
+        return (int)Language.GetSafeLanguage3((LanguageID)tr.Language);
     }
 
-    private static void SetPINGA(CK3 pk, EncounterCriteria criteria, PersonalInfo3 pi)
+    private static void SetPINGA(CK3 pk, in EncounterCriteria criteria, PersonalInfo3 pi)
     {
-        if (criteria.Shiny != Shiny.Never)
-            criteria = criteria with { Shiny = Shiny.Never }; // ensure no bad inputs
-        if (criteria.IsSpecifiedIVsAll() && MethodCXD.SetFromIVs(pk, criteria, pi, noShiny: true))
+        var tmp = criteria with { Shiny = Shiny.Never }; // ensure no bad inputs
+        if (criteria.IsSpecifiedIVsAll() && MethodCXD.SetFromIVs(pk, tmp, pi, noShiny: true))
             return;
-        MethodCXD.SetRandom(pk, criteria, pi, noShiny: true);
+        MethodCXD.SetRandom(pk, tmp, pi, noShiny: true, Util.Rand32());
     }
     #endregion
 
     #region Matching
     public bool IsMatchExact(PKM pk, EvoCriteria evo)
     {
+        if (pk.Version != Version)
+            return false;
         if (!IsMatchEggLocation(pk))
             return false;
         if (!IsMatchLocation(pk))
@@ -153,7 +155,7 @@ public sealed record EncounterGift3Colo : IEncounterable, IEncounterMatch, IEnco
     }
     #endregion
 
-    public bool IsCompatible(PIDType type, PKM pk) => type is PIDType.CXD or PIDType.CXDAnti;
+    public RandomCorrelationRating IsCompatible(PIDType type, PKM pk) => type is PIDType.CXD or PIDType.CXDAnti ? Match : Mismatch;
 
     public PIDType GetSuggestedCorrelation() => PIDType.CXD;
 

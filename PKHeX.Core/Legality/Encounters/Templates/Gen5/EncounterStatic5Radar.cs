@@ -28,8 +28,8 @@ public sealed record EncounterStatic5Radar(ushort Species, byte Form, AbilityPer
 
     public PK5 ConvertToPKM(ITrainerInfo tr, EncounterCriteria criteria)
     {
+        int language = (int)Language.GetSafeLanguage456((LanguageID)tr.Language);
         var version = this.GetCompatibleVersion(tr.Version);
-        int lang = (int)Language.GetSafeLanguage(Generation, (LanguageID)tr.Language, version);
         var pi = PersonalTable.B2W2[Species];
         var pk = new PK5
         {
@@ -43,13 +43,13 @@ public sealed record EncounterStatic5Radar(ushort Species, byte Form, AbilityPer
 
             ID32 = tr.ID32,
             Version = version,
-            Language = lang,
+            Language = language,
             OriginalTrainerGender = tr.Gender,
             OriginalTrainerName = tr.OT,
 
             OriginalTrainerFriendship = pi.BaseFriendship,
 
-            Nickname = SpeciesName.GetSpeciesNameGeneration(Species, lang, Generation),
+            Nickname = SpeciesName.GetSpeciesNameGeneration(Species, language, Generation),
         };
 
         EncounterUtil.SetEncounterMoves(pk, version, LevelMin);
@@ -60,14 +60,14 @@ public sealed record EncounterStatic5Radar(ushort Species, byte Form, AbilityPer
         return pk;
     }
 
-    private void SetPINGA(PK5 pk, EncounterCriteria criteria, PersonalInfo5B2W2 pi)
+    private void SetPINGA(PK5 pk, in EncounterCriteria criteria, PersonalInfo5B2W2 pi)
     {
-        var gender = criteria.GetGender(pi);
-        var nature = criteria.GetNature();
-        var ability = criteria.GetAbilityFromNumber(Ability);
-        PIDGenerator.SetRandomWildPID5(pk, nature, ability, gender);
-        if (pk.IsShiny)
-            pk.PID ^= 0x1000_0000;
+        var seed = Util.Rand.Rand64();
+        MonochromeRNG.Generate(pk, criteria, pi.Gender, seed, false, Shiny, Ability);
+
+        pk.Nature = criteria.GetNature();
+        var abilityIndex = Ability == AbilityPermission.OnlyHidden ? 2 : (int)(pk.PID >> 16) & 1;
+        pk.RefreshAbility(abilityIndex);
         criteria.SetRandomIVs(pk);
     }
 

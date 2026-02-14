@@ -17,10 +17,10 @@ public sealed class BitmapAnimator : IDisposable
 
     private int imgWidth;
     private int imgHeight;
-    private byte[]? GlowData;
+    private ReadOnlyMemory<byte> GlowData;
     private Image? ExtraLayer;
-    private Image?[]? GlowCache;
-    private Image? OriginalBackground;
+    private Bitmap?[]? GlowCache;
+    private Bitmap? OriginalBackground;
     private readonly Lock Lock = new();
 
     private PictureBox? pb;
@@ -50,14 +50,14 @@ public sealed class BitmapAnimator : IDisposable
             GlowCache[i] = null;
     }
 
-    public void Start(PictureBox pbox, Image baseImage, byte[] glowData, Image? original, Image extra)
+    public void Start(PictureBox pbox, Image baseImage, ReadOnlyMemory<byte> glowData, Bitmap? original, Image extra)
     {
         Enabled = false;
         imgWidth = baseImage.Width;
         imgHeight = baseImage.Height;
         GlowData = glowData;
         GlowCounter = 0;
-        GlowCache = new Image[GlowFps];
+        GlowCache = new Bitmap[GlowFps];
         GlowInterval = 1000 / GlowFps;
         Timer.Interval = GlowInterval;
         lock (Lock)
@@ -99,13 +99,13 @@ public sealed class BitmapAnimator : IDisposable
         var elapsedFraction = (double)frameIndex / GlowInterval;
         var frameColor = GetFrameColor(elapsedFraction);
 
-        ArgumentNullException.ThrowIfNull(GlowData);
+        ArgumentOutOfRangeException.ThrowIfEqual(GlowData.Length, 0);
 
         var frameData = ArrayPool<byte>.Shared.Rent(GlowData.Length);
         var frameSpan = frameData.AsSpan(0, GlowData.Length);
-        GlowData.AsSpan().CopyTo(frameSpan);
+        GlowData.Span.CopyTo(frameSpan);
         ImageUtil.ChangeAllColorTo(frameSpan, frameColor);
-        frame = ImageUtil.GetBitmap(frameData, imgWidth, imgHeight, GlowData.Length);
+        frame = ImageUtil.GetBitmap(frameSpan, imgWidth, imgHeight);
         frameSpan.Clear();
         ArrayPool<byte>.Shared.Return(frameData);
 

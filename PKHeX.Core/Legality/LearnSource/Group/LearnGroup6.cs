@@ -3,7 +3,7 @@ using System;
 namespace PKHeX.Core;
 
 /// <summary>
-/// Group that checks the source of a move in <see cref="GameVersion.Gen6"/>.
+/// Group that checks the source of a move in <see cref="EntityContext.Gen6"/>.
 /// </summary>
 public sealed class LearnGroup6 : ILearnGroup
 {
@@ -24,16 +24,16 @@ public sealed class LearnGroup6 : ILearnGroup
 
         if (option.IsPast() && types.HasFlag(MoveSourceType.Encounter))
         {
-            if (enc is EncounterEgg { Generation: Generation } egg)
+            if (enc is EncounterEgg6 egg)
                 CheckEncounterMoves(result, current, egg);
-            else if (enc is EncounterSlot6AO { CanDexNav: true } dexnav && pk.IsOriginalMovesetDeleted())
+            else if (enc is EncounterSlot6AO { IsMoveBonusPossible: true } dexnav && pk.IsOriginalMovesetDeleted())
                 CheckDexNavMoves(result, current, dexnav);
         }
 
         return MoveResult.AllParsed(result);
     }
 
-    private static void CheckEncounterMoves(Span<MoveResult> result, ReadOnlySpan<ushort> current, EncounterEgg egg)
+    private static void CheckEncounterMoves(Span<MoveResult> result, ReadOnlySpan<ushort> current, EncounterEgg6 egg)
     {
         ILearnSource inst = egg.Version > GameVersion.Y ? LearnSource6AO.Instance : LearnSource6XY.Instance;
         var eggMoves = inst.GetEggMoves(egg.Species, egg.Form);
@@ -62,7 +62,7 @@ public sealed class LearnGroup6 : ILearnGroup
             if (result[i].Valid)
                 continue;
             var move = current[i];
-            if (!dexnav.CanBeDexNavMove(move))
+            if (!dexnav.IsMoveBonus(move))
                 continue;
             result[i] = new(new(LearnMethod.Encounter, LearnEnvironment.ORAS), Generation: Generation);
             break;
@@ -219,18 +219,8 @@ public sealed class LearnGroup6 : ILearnGroup
     private static void FlagEncounterMoves(IEncounterTemplate enc, Span<bool> result)
     {
         if (enc is IMoveset { Moves: { HasMoves: true } x })
-        {
-            result[x.Move4] = true;
-            result[x.Move3] = true;
-            result[x.Move2] = true;
-            result[x.Move1] = true;
-        }
-        if (enc is IRelearn { Relearn: { HasMoves: true } r})
-        {
-            result[r.Move4] = true;
-            result[r.Move3] = true;
-            result[r.Move2] = true;
-            result[r.Move1] = true;
-        }
+            x.FlagMoves(result);
+        if (enc is IRelearn { Relearn: { HasMoves: true } r })
+            r.FlagMoves(result);
     }
 }

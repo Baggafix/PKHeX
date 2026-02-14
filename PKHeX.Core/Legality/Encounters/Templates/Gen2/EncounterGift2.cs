@@ -94,8 +94,9 @@ public sealed record EncounterGift2
     public PK2 ConvertToPKM(ITrainerInfo tr, EncounterCriteria criteria)
     {
         var lang = GetLanguage((LanguageID)tr.Language);
+        var isJapanese = lang == Japanese;
         var pi = PersonalTable.C[Species];
-        var pk = new PK2
+        var pk = new PK2(isJapanese)
         {
             Species = Species,
             CurrentLevel = CurrentLevel == 0 ? LevelMin : CurrentLevel,
@@ -162,7 +163,7 @@ public sealed record EncounterGift2
         if (Language == LanguageRestriction.InternationalNotEnglish && request is not (French or Italian or German or Spanish))
             return French;
 
-        if (request is Hacked or UNUSED_6 or >= Korean)
+        if (request is None or UNUSED_6 or >= Korean)
             return English;
         return request;
     }

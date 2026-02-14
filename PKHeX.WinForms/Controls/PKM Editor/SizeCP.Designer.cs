@@ -63,25 +63,27 @@ namespace PKHeX.WinForms.Controls
             FLP_CP.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             FLP_CP.Controls.Add(MT_CP);
             FLP_CP.Controls.Add(CHK_Auto);
-            FLP_CP.Location = new System.Drawing.Point(80, 75);
+            FLP_CP.Location = new System.Drawing.Point(80, 78);
             FLP_CP.Margin = new System.Windows.Forms.Padding(0);
             FLP_CP.Name = "FLP_CP";
-            FLP_CP.Size = new System.Drawing.Size(112, 25);
+            FLP_CP.Padding = new System.Windows.Forms.Padding(0, 1, 0, 1);
+            FLP_CP.Size = new System.Drawing.Size(116, 27);
             FLP_CP.TabIndex = 1;
             // 
             // MT_CP
             // 
-            MT_CP.Location = new System.Drawing.Point(0, 0);
+            MT_CP.Location = new System.Drawing.Point(0, 1);
             MT_CP.Margin = new System.Windows.Forms.Padding(0);
             MT_CP.Mask = "00000";
             MT_CP.Name = "MT_CP";
-            MT_CP.Size = new System.Drawing.Size(40, 25);
+            MT_CP.Size = new System.Drawing.Size(44, 25);
             MT_CP.TabIndex = 5;
+            MT_CP.Text = "12345";
             MT_CP.TextChanged += MT_CP_TextChanged;
             // 
             // CHK_Auto
             // 
-            CHK_Auto.Location = new System.Drawing.Point(48, 0);
+            CHK_Auto.Location = new System.Drawing.Point(52, 1);
             CHK_Auto.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             CHK_Auto.Name = "CHK_Auto";
             CHK_Auto.Size = new System.Drawing.Size(64, 24);
@@ -93,7 +95,7 @@ namespace PKHeX.WinForms.Controls
             // L_CP
             // 
             L_CP.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            L_CP.Location = new System.Drawing.Point(0, 75);
+            L_CP.Location = new System.Drawing.Point(0, 78);
             L_CP.Margin = new System.Windows.Forms.Padding(0);
             L_CP.Name = "L_CP";
             L_CP.Size = new System.Drawing.Size(80, 24);
@@ -115,7 +117,7 @@ namespace PKHeX.WinForms.Controls
             // L_Weight
             // 
             L_Weight.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            L_Weight.Location = new System.Drawing.Point(0, 25);
+            L_Weight.Location = new System.Drawing.Point(0, 26);
             L_Weight.Margin = new System.Windows.Forms.Padding(0);
             L_Weight.Name = "L_Weight";
             L_Weight.Size = new System.Drawing.Size(80, 24);
@@ -125,11 +127,11 @@ namespace PKHeX.WinForms.Controls
             // 
             // NUD_HeightScalar
             // 
-            NUD_HeightScalar.Location = new System.Drawing.Point(0, 0);
+            NUD_HeightScalar.Location = new System.Drawing.Point(0, 1);
             NUD_HeightScalar.Margin = new System.Windows.Forms.Padding(0);
             NUD_HeightScalar.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
             NUD_HeightScalar.Name = "NUD_HeightScalar";
-            NUD_HeightScalar.Size = new System.Drawing.Size(40, 25);
+            NUD_HeightScalar.Size = new System.Drawing.Size(44, 25);
             NUD_HeightScalar.TabIndex = 1;
             NUD_HeightScalar.Value = new decimal(new int[] { 255, 0, 0, 0 });
             NUD_HeightScalar.ValueChanged += NUD_HeightScalar_ValueChanged;
@@ -137,8 +139,8 @@ namespace PKHeX.WinForms.Controls
             // 
             // TB_HeightAbs
             // 
-            TB_HeightAbs.Location = new System.Drawing.Point(40, 0);
-            TB_HeightAbs.Margin = new System.Windows.Forms.Padding(0);
+            TB_HeightAbs.Location = new System.Drawing.Point(45, 1);
+            TB_HeightAbs.Margin = new System.Windows.Forms.Padding(1, 0, 0, 0);
             TB_HeightAbs.Name = "TB_HeightAbs";
             TB_HeightAbs.Size = new System.Drawing.Size(64, 25);
             TB_HeightAbs.TabIndex = 2;
@@ -169,13 +171,13 @@ namespace PKHeX.WinForms.Controls
             tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            tableLayoutPanel1.Size = new System.Drawing.Size(224, 96);
+            tableLayoutPanel1.Size = new System.Drawing.Size(231, 96);
             tableLayoutPanel1.TabIndex = 2;
             // 
             // L_Scale
             // 
             L_Scale.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            L_Scale.Location = new System.Drawing.Point(0, 50);
+            L_Scale.Location = new System.Drawing.Point(0, 52);
             L_Scale.Margin = new System.Windows.Forms.Padding(0);
             L_Scale.Name = "L_Scale";
             L_Scale.Size = new System.Drawing.Size(80, 24);
@@ -190,19 +192,20 @@ namespace PKHeX.WinForms.Controls
             FLP_Weight.Controls.Add(NUD_WeightScalar);
             FLP_Weight.Controls.Add(TB_WeightAbs);
             FLP_Weight.Controls.Add(L_SizeW);
-            FLP_Weight.Location = new System.Drawing.Point(80, 25);
+            FLP_Weight.Location = new System.Drawing.Point(80, 26);
             FLP_Weight.Margin = new System.Windows.Forms.Padding(0);
             FLP_Weight.Name = "FLP_Weight";
-            FLP_Weight.Size = new System.Drawing.Size(144, 25);
+            FLP_Weight.Padding = new System.Windows.Forms.Padding(0, 1, 0, 0);
+            FLP_Weight.Size = new System.Drawing.Size(149, 26);
             FLP_Weight.TabIndex = 4;
             // 
             // NUD_WeightScalar
             // 
-            NUD_WeightScalar.Location = new System.Drawing.Point(0, 0);
+            NUD_WeightScalar.Location = new System.Drawing.Point(0, 1);
             NUD_WeightScalar.Margin = new System.Windows.Forms.Padding(0);
             NUD_WeightScalar.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
             NUD_WeightScalar.Name = "NUD_WeightScalar";
-            NUD_WeightScalar.Size = new System.Drawing.Size(40, 25);
+            NUD_WeightScalar.Size = new System.Drawing.Size(44, 25);
             NUD_WeightScalar.TabIndex = 3;
             NUD_WeightScalar.Value = new decimal(new int[] { 255, 0, 0, 0 });
             NUD_WeightScalar.ValueChanged += NUD_WeightScalar_ValueChanged;
@@ -210,8 +213,8 @@ namespace PKHeX.WinForms.Controls
             // 
             // TB_WeightAbs
             // 
-            TB_WeightAbs.Location = new System.Drawing.Point(40, 0);
-            TB_WeightAbs.Margin = new System.Windows.Forms.Padding(0);
+            TB_WeightAbs.Location = new System.Drawing.Point(45, 1);
+            TB_WeightAbs.Margin = new System.Windows.Forms.Padding(1, 0, 0, 0);
             TB_WeightAbs.Name = "TB_WeightAbs";
             TB_WeightAbs.Size = new System.Drawing.Size(64, 25);
             TB_WeightAbs.TabIndex = 4;
@@ -221,7 +224,7 @@ namespace PKHeX.WinForms.Controls
             // L_SizeW
             // 
             L_SizeW.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            L_SizeW.Location = new System.Drawing.Point(112, 0);
+            L_SizeW.Location = new System.Drawing.Point(117, 1);
             L_SizeW.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             L_SizeW.Name = "L_SizeW";
             L_SizeW.Size = new System.Drawing.Size(32, 20);
@@ -239,13 +242,14 @@ namespace PKHeX.WinForms.Controls
             FLP_Height.Location = new System.Drawing.Point(80, 0);
             FLP_Height.Margin = new System.Windows.Forms.Padding(0);
             FLP_Height.Name = "FLP_Height";
-            FLP_Height.Size = new System.Drawing.Size(144, 25);
+            FLP_Height.Padding = new System.Windows.Forms.Padding(0, 1, 0, 0);
+            FLP_Height.Size = new System.Drawing.Size(149, 26);
             FLP_Height.TabIndex = 3;
             // 
             // L_SizeH
             // 
             L_SizeH.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            L_SizeH.Location = new System.Drawing.Point(112, 0);
+            L_SizeH.Location = new System.Drawing.Point(117, 1);
             L_SizeH.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             L_SizeH.Name = "L_SizeH";
             L_SizeH.Size = new System.Drawing.Size(32, 20);
@@ -259,10 +263,10 @@ namespace PKHeX.WinForms.Controls
             FLP_Scale3.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             FLP_Scale3.Controls.Add(NUD_Scale);
             FLP_Scale3.Controls.Add(L_SizeS);
-            FLP_Scale3.Location = new System.Drawing.Point(80, 50);
-            FLP_Scale3.Margin = new System.Windows.Forms.Padding(0);
+            FLP_Scale3.Location = new System.Drawing.Point(80, 53);
+            FLP_Scale3.Margin = new System.Windows.Forms.Padding(0, 1, 0, 0);
             FLP_Scale3.Name = "FLP_Scale3";
-            FLP_Scale3.Size = new System.Drawing.Size(88, 25);
+            FLP_Scale3.Size = new System.Drawing.Size(92, 25);
             FLP_Scale3.TabIndex = 5;
             // 
             // NUD_Scale
@@ -271,7 +275,7 @@ namespace PKHeX.WinForms.Controls
             NUD_Scale.Margin = new System.Windows.Forms.Padding(0);
             NUD_Scale.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
             NUD_Scale.Name = "NUD_Scale";
-            NUD_Scale.Size = new System.Drawing.Size(40, 25);
+            NUD_Scale.Size = new System.Drawing.Size(44, 25);
             NUD_Scale.TabIndex = 3;
             NUD_Scale.Value = new decimal(new int[] { 255, 0, 0, 0 });
             NUD_Scale.ValueChanged += NUD_Scale_ValueChanged;
@@ -280,7 +284,7 @@ namespace PKHeX.WinForms.Controls
             // L_SizeS
             // 
             L_SizeS.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            L_SizeS.Location = new System.Drawing.Point(48, 0);
+            L_SizeS.Location = new System.Drawing.Point(52, 0);
             L_SizeS.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             L_SizeS.Name = "L_SizeS";
             L_SizeS.Size = new System.Drawing.Size(40, 20);
@@ -293,7 +297,7 @@ namespace PKHeX.WinForms.Controls
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Inherit;
             Controls.Add(tableLayoutPanel1);
             Name = "SizeCP";
-            Size = new System.Drawing.Size(224, 96);
+            Size = new System.Drawing.Size(231, 96);
             FLP_CP.ResumeLayout(false);
             FLP_CP.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)NUD_HeightScalar).EndInit();

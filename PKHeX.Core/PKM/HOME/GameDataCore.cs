@@ -297,21 +297,19 @@ public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature
 
     public int HeldItem { get => ReadUInt16LittleEndian(Data[0xC2..]); set => WriteUInt16LittleEndian(Data[0xC2..], (ushort)value); }
 
-    public TrainerIDFormat TrainerIDDisplayFormat => Version.GetGeneration() >= 7 ? TrainerIDFormat.SixDigit : TrainerIDFormat.SixteenBit;
+    public TrainerIDFormat TrainerIDDisplayFormat => Version.Generation >= 7 ? TrainerIDFormat.SixDigit : TrainerIDFormat.SixteenBit;
 
     public int MarkingCount => 6;
 
     public MarkingColor GetMarking(int index)
     {
-        if ((uint)index >= MarkingCount)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)MarkingCount);
         return (MarkingColor)((MarkingValue >> (index * 2)) & 3);
     }
 
     public void SetMarking(int index, MarkingColor value)
     {
-        if ((uint)index >= MarkingCount)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)MarkingCount);
         var shift = index * 2;
         MarkingValue = (ushort)((MarkingValue & ~(0b11 << shift)) | (((byte)value & 3) << shift));
     }

@@ -24,6 +24,8 @@ public static class EncounterServerDate
         WA8 wa8 => Result(wa8.IsWithinDistributionWindow(obtained)),
         WB8 wb8 => Result(wb8.IsWithinDistributionWindow(obtained)),
         WC9 wc9 => Result(wc9.IsWithinDistributionWindow(obtained)),
+        WA9 wa9 => Result(wa9.IsWithinDistributionWindow(obtained)),
+        EncounterSlot7GO g7 => Result(g7.IsWithinDistributionWindow(obtained)),
         EncounterSlot8GO g8 => Result(g8.IsWithinDistributionWindow(obtained)),
         _ => throw new ArgumentOutOfRangeException(nameof(enc)),
     };
@@ -43,11 +45,15 @@ public static class EncounterServerDate
     /// <inheritdoc cref="IsWithinDistributionWindow(IEncounterServerDate,DateOnly)"/>
     public static bool IsWithinDistributionWindow(this WC9 card, DateOnly obtained) => card.GetDistributionWindow(out var window) && window.Contains(obtained);
 
+    /// <inheritdoc cref="IsWithinDistributionWindow(IEncounterServerDate,DateOnly)"/>
+    public static bool IsWithinDistributionWindow(this WA9 card, DateOnly obtained) => card.GetDistributionWindow(out var window) && window.Contains(obtained);
+
     public static bool GetDistributionWindow(this WB7 card, out DistributionWindow window) => WB7Gifts.TryGetValue(card.CardID, out window);
     public static bool GetDistributionWindow(this WC8 card, out DistributionWindow window) => WC8Gifts.TryGetValue(card.CardID, out window) || WC8GiftsChk.TryGetValue(card.Checksum, out window);
     public static bool GetDistributionWindow(this WA8 card, out DistributionWindow window) => WA8Gifts.TryGetValue(card.CardID, out window);
     public static bool GetDistributionWindow(this WB8 card, out DistributionWindow window) => WB8Gifts.TryGetValue(card.CardID, out window);
     public static bool GetDistributionWindow(this WC9 card, out DistributionWindow window) => WC9Gifts.TryGetValue(card.CardID, out window) || WC9GiftsChk.TryGetValue(card.Checksum, out window);
+    public static bool GetDistributionWindow(this WA9 card, out DistributionWindow window) => WA9Gifts.TryGetValue(card.CardID, out window);
 
     /// <summary>
     /// Initial introduction of HOME support for SW/SH; gift availability (generating) was revised in 3.0.0.
@@ -215,11 +221,39 @@ public static class EncounterServerDate
         {1010, new(2025, 01, 21, 2025, 04, 01)}, // Pokémon Lucario & The Mystery of Mew Movie Gift KOR 아론's Lucario
         {0514, new(2025, 02, 05, 2025, 07, 01, +2)}, // Pokémon Day 2025 Flying Tera Type Eevee
         {0519, new(2025, 02, 20, 2025, 03, 01)}, // Marco's Jumpluff
+        {0066, new(2025, 04, 18, 2025, 08, 01)}, // Wei Chyr's Rillaboom
+        {1019, new(2025, 04, 24, 2025, 07, 01)}, // Pokémon Town - KOR Ditto Project
+        {1020, new(2025, 06, 06, 2025, 06, 10)}, // PTC 2025 홍주영's Porygon2
+        {0523, new(2025, 06, 13, 2025, 06, 21)}, // NAIC 2025 Wolfe's Incineroar
+        {0067, new(2025, 06, 20, 2025, 06, 23)}, // PJCS 2025 Hyuma Hara's Flutter Mane
+        {0068, new(2025, 06, 20, 2025, 10, 01)}, // PJCS 2025 Ray Yamanaka's Amoonguss
+        {1542, new(2025, 08, 07, 2025, 10, 01)}, // Shiny Wo-Chien
+        {1544, new(2025, 08, 21, 2025, 10, 01)}, // Shiny Chien-Pao
+        {1546, new(2025, 09, 04, 2025, 10, 01)}, // Shiny Ting-Lu
+        {1548, new(2025, 09, 18, 2025, 10, 01)}, // Shiny Chi-Yu
+        {0524, new(2025, 08, 14, 2025, 08, 31)}, // WCS 2025 Toedscool
+        {0525, new(2025, 08, 15, 2025, 08, 23)}, // WCS 2025 Luca Ceribelli's Farigiraf
+        {1540, new(2025, 09, 25, 2025, 10, 25)}, // Shiny Miraidon / Koraidon Gift
+        {0070, new(2025, 10, 31, 2027, 02, 01)}, // PokéCenter Fidough Birthday Gift
+        {0526, new(2025, 11, 21, 2025, 12, 01)}, // LAIC 2026 Federico Camporesi’s Whimsicott
+        {0527, new(2026, 02, 12, 2026, 02, 21)}, // EUIC 2026 Yuma Kinugawa's Hisuian Typhlosion 
 
         {9021, HOME3_ML}, // Hidden Ability Sprigatito
         {9022, HOME3_ML}, // Hidden Ability Fuecoco
         {9023, HOME3_ML}, // Hidden Ability Quaxly
         {9024, new(2024, 10, 16)}, // Shiny Meloetta
         {9025, new(2024, 11, 01)}, // PokéCenter Birthday Tandemaus
+        {9030, new(2025, 10, 31)}, // PokéCenter Fidough Birthday Gift
+    };
+
+    /// <summary>
+    /// Minimum date the gift can be received.
+    /// </summary>
+    private static readonly Dictionary<int, DistributionWindow> WA9Gifts = new()
+    {
+        {1601, new(2025, 10, 14, 2026, 03, 01, +2)}, // Ralts holding Gardevoirite
+        {0102, new(2025, 10, 23, 2026, 02, 01, +2)}, // Slowpoke PokéCenter Gift
+        {0101, new(2025, 10, 31, 2027, 02, 01)}, // PokéCenter Audino Birthday Gift
+        {1607, new(2025, 12, 09, 2026, 01, 20)}, // Alpha Charizard
     };
 }

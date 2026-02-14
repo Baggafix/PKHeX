@@ -24,13 +24,13 @@ PKHeX erwartet entschlüsselte Spielstände. Da diese konsolenspezifisch verschl
 
 ## Screenshots
 
-![Main Window](https://i.imgur.com/7ErmRJI.png)
+![Main Window](https://i.imgur.com/0KYz0rO.png)
 
 ## Erstellen
 
-PKHeX ist eine Windows Forms Anwendung, welche die [.NET 9.0](https://dotnet.microsoft.com/download/dotnet/9.0) runtime benötigt.
+PKHeX ist eine Windows Forms Anwendung, welche die [.NET 10.0](https://dotnet.microsoft.com/download/dotnet/10.0) runtime benötigt.
 
-Die Anwendung kann mit jedem Kompiler erstellt werden, der C# 13 unterstützt.
+Die Anwendung kann mit jedem Kompiler erstellt werden, der C# 14 unterstützt.
 
 ### Erstell Konfiguration
 

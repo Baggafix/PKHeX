@@ -18,13 +18,13 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IMysteryGiftStora
     protected override int SIZE_PARTY => PokeCrypto.SIZE_6PARTY;
     public override int SIZE_BOXSLOT => PokeCrypto.SIZE_6PARTY;
     public override byte[] GetDataForBox(PKM pk) => pk.EncryptedPartyData;
-    public override PB7 GetBoxSlot(int offset) => GetDecryptedPKM(Data.AsSpan(offset, SIZE_PARTY).ToArray()); // party format in boxes!
+    public override PB7 GetBoxSlot(int offset) => GetDecryptedPKM(Data.Slice(offset, SIZE_PARTY).ToArray()); // party format in boxes!
     public override PB7 GetDecryptedPKM(byte[] data) => GetPKM(DecryptPKM(data));
 
     public override PersonalTable7GG Personal => PersonalTable.GG;
     public override ReadOnlySpan<ushort> HeldItems => Legal.HeldItems_GG;
 
-    protected override SAV7b CloneInternal() => new((byte[])Data.Clone());
+    protected override SAV7b CloneInternal() => new(Data.ToArray());
 
     public SaveBlockAccessor7b Blocks { get; }
     public override IReadOnlyList<BlockInfo> AllBlocks => Blocks.BlockInfo;
@@ -36,7 +36,7 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IMysteryGiftStora
         ClearBoxes();
     }
 
-    public SAV7b(byte[] data) : base(data, 0xB8800)
+    public SAV7b(Memory<byte> data) : base(data, 0xB8800)
     {
         Blocks = new SaveBlockAccessor7b(this);
         Initialize();
@@ -66,7 +66,7 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IMysteryGiftStora
     public GoParkStorage Park => Blocks.Park;
     public PlayerGeoLocation7b PlayerGeoLocation => Blocks.PlayerGeoLocation;
 
-    public override IReadOnlyList<InventoryPouch> Inventory { get => Blocks.Items.Inventory; set => Blocks.Items.Inventory = value; }
+    public override PlayerBag7b Inventory => new(this);
 
     // Feature Overrides
     public override byte Generation => 7;
@@ -95,6 +95,9 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IMysteryGiftStora
     {
         var pb7 = (PB7)pk;
         // Apply to this Save File
+        if (!isParty && !pb7.IsStarter)
+            pb7.ResetSpiritMood();
+
         pb7.UpdateHandler(this);
         pb7.RefreshChecksum();
     }
@@ -116,7 +119,7 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IMysteryGiftStora
     {
         var result = StorageSlotSource.None;
         var header = Blocks.Storage.PokeListInfo;
-        int position = Array.IndexOf(header, index, 0, 6);
+        int position = header.AsSpan(0, 6).IndexOf(index);
         if (position >= 0)
             result = (StorageSlotSource)((int)StorageSlotSource.Party1 << position);
         if (header[PokeListHeader.STARTER] == index)

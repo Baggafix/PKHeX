@@ -24,6 +24,7 @@ public sealed partial class SAV_EventWork : Form
         SAV = sav.Blocks.EventWork;
         Origin = sav;
 
+        AllowDrop = true;
         DragEnter += Main_DragEnter;
         DragDrop += Main_DragDrop;
 
@@ -40,6 +41,11 @@ public sealed partial class SAV_EventWork : Form
         LoadFlags(Editor.Flag);
         LoadWork(Editor.Work);
         editing = false;
+        if (Application.IsDarkModeEnabled)
+        {
+            foreach (TabPage tab in TC_Features.TabPages)
+                tab.UseVisualStyleBackColor = false;
+        }
         ResumeLayout();
 
         if (CB_Stats.Items.Count > 0)
@@ -93,6 +99,10 @@ public sealed partial class SAV_EventWork : Form
                 Name = $"Tab_F{g.Type}",
                 Text = g.Type.ToString(),
             };
+            if (Application.IsDarkModeEnabled)
+            {
+                tab.UseVisualStyleBackColor = false;
+            }
             tab.Controls.Add(tlp);
             TC_Flag.Controls.Add(tab);
             tlp.ResumeLayout();
@@ -178,12 +188,20 @@ public sealed partial class SAV_EventWork : Form
                     }
                 }
                 i++;
+                if (Application.IsDarkModeEnabled)
+                {
+                    cb.FlatStyle = FlatStyle.Flat;
+                }
             }
             var tab = new TabPage
             {
                 Name = $"Tab_W{g.Type}",
                 Text = g.Type.ToString(),
             };
+            if (Application.IsDarkModeEnabled)
+            {
+                tab.UseVisualStyleBackColor = false;
+            }
             tab.Controls.Add(tlp);
             TC_Work.Controls.Add(tab);
             tlp.ResumeLayout();
@@ -228,6 +246,7 @@ public sealed partial class SAV_EventWork : Form
     private void OpenSAV(object sender, EventArgs e)
     {
         using var ofd = new OpenFileDialog();
+        ofd.Title = MessageStrings.MsgFileLoadSaveSelectGame;
         if (ofd.ShowDialog() == DialogResult.OK)
             LoadSAV(sender, ofd.FileName);
     }
@@ -241,14 +260,15 @@ public sealed partial class SAV_EventWork : Form
         ChangeSAV();
     }
 
-    private static string[] GetStringList(GameVersion game, [ConstantExpected] string type)
+    private static string[] GetStringList(GameVersion version, [ConstantExpected] string type)
     {
-        var gamePrefix = GetGameFilePrefix(game);
+        var gamePrefix = GetGameFilePrefix(version);
         return GameLanguage.GetStrings(gamePrefix, GameInfo.CurrentLanguage, type);
     }
 
-    private static string GetGameFilePrefix(GameVersion game) => game switch
+    private static string GetGameFilePrefix(GameVersion version) => version switch
     {
+        ZA => "za",
         SL or VL or SV => "sv",
         BD or SP or BDSP => "bdsp",
         SW or SH or SWSH => "swsh",
@@ -266,7 +286,7 @@ public sealed partial class SAV_EventWork : Form
         C => "c",
         R or S or RS => "rs",
         FR or LG or FRLG => "frlg",
-        _ => throw new IndexOutOfRangeException(nameof(game)),
+        _ => throw new IndexOutOfRangeException(nameof(version)),
     };
 
     private void DiffSaves()
@@ -293,9 +313,18 @@ public sealed partial class SAV_EventWork : Form
     {
         if (e?.Data?.GetData(DataFormats.FileDrop) is not string[] { Length: not 0 } files)
             return;
-        var dr = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, Name, "Yes: Old Save" + Environment.NewLine + "No: New Save");
-        var button = dr == DialogResult.Yes ? B_LoadOld : B_LoadNew;
-        LoadSAV(button, files[0]);
+
+        foreach (var file in files)
+        {
+            var result = this.SelectNewOld(file, B_LoadNew.Text, B_LoadOld.Text);
+            if (result == DualDiffSelection.New)
+                TB_NewSAV.Text = file;
+            else if (result == DualDiffSelection.Old)
+                TB_OldSAV.Text = file;
+            else if (ModifierKeys == Keys.Escape)
+                return;
+        }
+        ChangeSAV();
     }
 
     private void B_ApplyFlag_Click(object sender, EventArgs e)

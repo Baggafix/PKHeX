@@ -23,13 +23,13 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         M.Env = value;
         menu.Editor = value;
         SAV = value.SAV;
-        value.Slots.Publisher.Subscribers.Add(this);
-        value.Slots.Publisher.Subscribers.Add(SL_Party);
-        value.Slots.Publisher.Subscribers.Add(Box);
-        value.Slots.Publisher.Subscribers.Add(SL_Extra);
+        value.Slots.Publisher.Subscribe(this);
+        value.Slots.Publisher.Subscribe(SL_Party);
+        value.Slots.Publisher.Subscribe(Box);
+        value.Slots.Publisher.Subscribe(SL_Extra);
     }
 
-    public SaveFile SAV { get; private set; } = new FakeSaveFile();
+    public SaveFile SAV { get; private set; } = FakeSaveFile.Default;
     public int CurrentBox => Box.CurrentBox;
     public SlotChangeManager M { get; }
     public readonly ContextMenuSAV menu;
@@ -37,8 +37,13 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
 
     public bool HaX;
     public bool ModifyPKM { private get; set; }
-    private bool _hideSecret;
-    public bool HideSecretDetails { private get => _hideSecret; set => ToggleSecrets(SAV, _hideSecret = value); }
+
+    public bool HideSecretDetails
+    {
+        private get;
+        set => ToggleSecrets(SAV, field = value);
+    }
+
     public ToolStripMenuItem Menu_Redo { get; set; } = null!;
     public ToolStripMenuItem Menu_Undo { get; set; } = null!;
     private bool FieldsLoaded;
@@ -79,6 +84,9 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         Box.Setup(M);
         SL_Party.Setup(M);
 
+        if (Application.IsDarkModeEnabled)
+            WinFormsUtil.InvertToolStripIcons(Tab_Box.ContextMenuStrip.Items);
+
         SL_Extra.ViewIndex = -2;
         menu = new ContextMenuSAV { Manager = M };
         InitializeEvents();
@@ -103,6 +111,15 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         GB_Daycare.Click += (_, _) => SwitchDaycare();
         FLP_SAVtools.Scroll += WinFormsUtil.PanelScroll;
         SortMenu.Opening += (_, x) => x.Cancel = !tabBoxMulti.GetTabRect(tabBoxMulti.SelectedIndex).Contains(PointToClient(MousePosition));
+        Tab_Box.SizeChanged += Tab_Box_SizeChanged;
+    }
+
+    private void Tab_Box_SizeChanged(object? sender, EventArgs e)
+    {
+        if (!SAV.HasBox)
+            return;
+        Box.HorizontallyCenter(Tab_Box);
+        BoxSearchAlignButton();
     }
 
     private void InitializeDragDrop(Control pb)
@@ -196,7 +213,16 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
             ResetParty(); // lots of slots change, just update
 
         var pb = SlotPictureBoxes[index];
-        SlotUtil.UpdateSlot(pb, slot, pk, SAV, Box.FlagIllegal, type);
+        var flags = GetFlags(pk);
+        SlotUtil.UpdateSlot(pb, slot, pk, SAV, flags, type);
+    }
+
+    private SlotVisibilityType GetFlags(PKM pk, bool ignoreLegality = false)
+    {
+        var result = SlotVisibilityType.None;
+        if (FlagIllegal && !ignoreLegality)
+            result |= SlotVisibilityType.CheckLegalityIndicate;
+        return result;
     }
 
     public ISlotInfo GetSlotData(PictureBox view)
@@ -234,7 +260,9 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         {
             var info = SL_Extra.GetSlotData(i);
             var pb = slots[i];
-            SlotUtil.UpdateSlot(pb, info, info.Read(SAV), SAV, Box.FlagIllegal);
+            var pk = info.Read(SAV);
+            var hideLegality = info is SlotInfoMisc { HideLegality: true };
+            SlotUtil.UpdateSlot(pb, info, pk, SAV, GetFlags(pk, hideLegality));
         }
     }
 
@@ -286,9 +314,8 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
             {
                 L_SlotOccupied[i].Text = $"{i + 1}: ✘";
                 var pb = UpdateSlot(i);
-                var current = pb.Image;
-                if (current is not null)
-                    pb.Image = ImageUtil.ChangeOpacity(current, 0.6);
+                if (pb.Image is Bitmap current)
+                    pb.Image = ImageUtil.CopyChangeOpacity(current, 0.6);
             }
         }
 
@@ -361,7 +388,8 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
     {
         var info = GetSlotData(relIndex);
         var pb = SlotPictureBoxes[relIndex];
-        SlotUtil.UpdateSlot(pb, info, info.Read(SAV), SAV, Box.FlagIllegal);
+        var pk = info.Read(SAV);
+        SlotUtil.UpdateSlot(pb, info, pk, SAV, GetFlags(pk));
         return pb;
     }
 
@@ -492,9 +520,14 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
 
     private void UpdateSaveSlot(object sender, EventArgs e)
     {
-        if (SAV is not SAV4BR br)
+        var index = WinFormsUtil.GetIndex(CB_SaveSlot);
+        if (SAV is not SAV4BR br || br.CurrentSlot == index)
             return;
-        br.CurrentSlot = WinFormsUtil.GetIndex(CB_SaveSlot);
+
+        var form = WinFormsUtil.FirstFormOfType<SAV_BattlePass>();
+        form?.Close();
+
+        br.CurrentSlot = index;
         Box.ResetBoxNames(); // fix box names
         SetPKMBoxes();
         UpdateBoxViewers(true);
@@ -615,6 +648,8 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
     private void B_OpenGeonetEditor_Click(object sender, EventArgs e) => OpenDialog(new SAV_Geonet4((SAV4)SAV));
     private void B_OpenUnityTowerEditor_Click(object sender, EventArgs e) => OpenDialog(new SAV_UnityTower((SAV5)SAV));
     private void B_OpenChatterEditor_Click(object sender, EventArgs e) => OpenDialog(new SAV_Chatter(SAV));
+    private void B_OpenGear_Click(object sender, EventArgs e) => OpenDialog(new SAV_Gear((SAV4BR)SAV));
+    private void B_Donuts_Click(object sender, EventArgs e) => OpenDialog(new SAV_Donut9a((SAV9ZA)SAV));
 
     private void B_OpenSecretBase_Click(object sender, EventArgs e)
     {
@@ -642,6 +677,7 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
             IEventFlag37 g37 => new SAV_EventFlags(g37, SAV.Version),
             IEventFlagProvider37 p => new SAV_EventFlags(p.EventWork, SAV.Version),
             SAV2 s => new SAV_EventFlags2(s),
+            SAV9ZA za => new SAV_FlagWork9a(za),
             _ => throw new Exception(),
         };
         form.ShowDialog();
@@ -664,6 +700,8 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         SAV8BS bs => new SAV_Trainer8b(bs),
         SAV8LA la => new SAV_Trainer8a(la),
         SAV9SV sv => new SAV_Trainer9(sv),
+        SAV9ZA za => new SAV_Trainer9a(za),
+        SAV4BR br => new SAV_Trainer4BR(br),
         _ => new SAV_SimpleTrainer(sav),
     };
 
@@ -713,6 +751,23 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
 
         if (SAV is SAV_STADIUM s0)
             TryOpen(s0, s0.GetRegisteredTeams());
+    }
+
+    private void B_OpenBattlePass_Click(object sender, EventArgs e)
+    {
+        void TryOpen(SAV4BR sav)
+        {
+            var form = WinFormsUtil.FirstFormOfType<SAV_BattlePass>();
+            if (form is not null)
+                form.CenterToForm(ParentForm);
+            else
+                form = new SAV_BattlePass(sav, M.Env.PKMEditor);
+            form.BringToFront();
+            form.Show();
+        }
+
+        if (SAV is SAV4BR br)
+            TryOpen(br);
     }
 
     private void B_Blocks_Click(object sender, EventArgs e)
@@ -779,6 +834,7 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
             SAV8BS bs => new SAV_PokedexBDSP(bs),
             SAV8LA la => new SAV_PokedexLA(la),
             SAV9SV sv => sv.SaveRevision == 0 ? new SAV_PokedexSV(sv) : new SAV_PokedexSVKitakami(sv),
+            SAV9ZA za => new SAV_Pokedex9a(za),
             _ => (Form?)null,
         };
         form?.ShowDialog();
@@ -858,6 +914,17 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         File.WriteAllBytes(sfd.FileName, jpeg);
     }
 
+    private void B_OpenFashion_Click(object sender, EventArgs e)
+    {
+        using var form = SAV switch
+        {
+            SAV9SV s9sv => new SAV_Fashion9(s9sv),
+            SAV9ZA s9za => new SAV_Fashion9(s9za),
+            _ => (Form?)null,
+        };
+        form?.ShowDialog();
+    }
+
     private void B_ConvertKorean_Click(object sender, EventArgs e)
     {
         if (SAV.Generation != 4)
@@ -900,8 +967,8 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, MsgClipboardLegalityExport) != DialogResult.Yes)
             return;
 
-        var lines = bulk.Parse.Select(z => $"{z.Judgement}: {z.Comment}");
-        var msg = string.Join(Environment.NewLine, lines);
+        var localization = LegalityLocalizationSet.GetLocalization(Main.CurrentLanguage);
+        var msg = bulk.Report(localization);
         WinFormsUtil.SetClipboardText(msg);
         SystemSounds.Asterisk.Play();
     }
@@ -944,7 +1011,7 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         bool reload = SAV is IStorageCleanup b && b.FixStoragePreWrite();
         if (reload)
             ReloadSlots();
-        return WinFormsUtil.ExportSAVDialog(SAV, SAV.CurrentBox);
+        return WinFormsUtil.ExportSAVDialog(this, SAV, SAV.CurrentBox);
     }
 
     public bool ExportBackup()
@@ -958,7 +1025,7 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
             return false;
         }
 
-        var suggestion = Util.CleanFileName(SAV.Metadata.BAKName);
+        var suggestion = PathUtil.CleanFileName(SAV.Metadata.BAKName);
         using var sfd = new SaveFileDialog();
         sfd.FileName = suggestion;
         if (sfd.ShowDialog() != DialogResult.OK)
@@ -1093,6 +1160,7 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         SetPKMBoxes(); // Reload all Entity picture boxes
 
         ToggleViewMisc(SAV);
+        BoxSearchAlignButton();
 
         FieldsLoaded = true;
         return WindowTranslationRequired;
@@ -1121,10 +1189,10 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
                 if (height > allowed)
                 {
                     var form = FindForm();
-                    if (form is not null)
-                        form.Height += height - allowed;
+                    form?.Height += height - allowed;
                 }
             }
+            BoxSearchClear();
         }
         if (SAV.HasParty)
         {
@@ -1228,13 +1296,14 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         B_OpenPokedex.Visible = sav.HasPokeDex;
         B_OpenBerryField.Visible = sav is SAV6XY; // OR/AS undocumented
         B_OpenFriendSafari.Visible = sav is SAV6XY;
-        B_OpenEventFlags.Visible = sav is IEventFlag37 or IEventFlagProvider37 or SAV1 or SAV2 or SAV8BS or SAV7b;
+        B_OpenEventFlags.Visible = sav is IEventFlag37 or IEventFlagProvider37 or SAV1 or SAV2 or SAV8BS or SAV7b or SAV9ZA;
         B_DLC.Visible = sav.Generation == 5;
         B_OpenPokeBeans.Visible = B_CellsStickers.Visible = B_FestivalPlaza.Visible = sav is SAV7;
 
         B_OtherSlots.Visible = sav is SAV1StadiumJ or SAV1Stadium or SAV2Stadium;
-        B_OpenTrainerInfo.Visible = B_OpenItemPouch.Visible = (sav.HasParty && SAV is not SAV4BR) || SAV is SAV7b; // Box RS & Battle Revolution
-        B_OpenMiscEditor.Visible = sav is SAV2 { Version: GameVersion.C} or SAV3 or SAV4 or SAV5 or SAV8BS;
+        B_OpenTrainerInfo.Visible = sav.HasParty || SAV is SAV7b; // Box RS
+        B_OpenItemPouch.Visible = (sav.HasParty && SAV is not SAV4BR) || SAV is SAV7b; // Box RS & Battle Revolution
+        B_OpenMiscEditor.Visible = sav is SAV2 { Version: GameVersion.C } or SAV3 or SAV4 or SAV5 or SAV8BS;
         B_Roamer.Visible = sav is SAV3 or SAV6XY;
 
         B_OpenHoneyTreeEditor.Visible = sav is SAV4Sinnoh;
@@ -1242,6 +1311,7 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         B_OpenGeonetEditor.Visible = sav is SAV4;
         B_OpenUnityTowerEditor.Visible = sav is SAV5;
         B_OpenChatterEditor.Visible = sav is SAV4 or SAV5;
+        B_OpenBattlePass.Visible = B_OpenGear.Visible = sav is SAV4BR;
         B_OpenSealStickers.Visible = B_Poffins.Visible = sav is SAV8BS;
         B_OpenApricorn.Visible = sav is SAV4HGSS;
         B_OpenRTCEditor.Visible = (sav.Generation == 2 && sav is not SAV2Stadium) || sav is IGen3Hoenn;
@@ -1252,6 +1322,9 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         B_RaidsDLC1.Visible = sav is SAV8SWSH { SaveRevision: >= 1 } or SAV9SV { SaveRevision: >= 1 };
         B_RaidsDLC2.Visible = sav is SAV8SWSH { SaveRevision: >= 2 } or SAV9SV { SaveRevision: >= 2 };
         FLP_SAVtools.Visible = B_Blocks.Visible = true;
+
+        B_OpenFashion.Visible = sav is SAV9SV or SAV9ZA;
+        B_Donuts.Visible = sav is SAV9ZA { SaveRevision: >= 1 };
 
         var list = FLP_SAVtools.Controls.OfType<Control>().OrderBy(z => z.Text).ToArray();
         FLP_SAVtools.Controls.Clear();
@@ -1331,7 +1404,9 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
     private static void ExportShowdownText(SaveFile sav, string success, Func<SaveFile, IEnumerable<PKM>> fetch)
     {
         var list = fetch(sav);
-        var result = ShowdownParsing.GetShowdownSets(list, Environment.NewLine + Environment.NewLine);
+        var programLanguage = Language.GetLanguageValue(Main.Settings.Startup.Language);
+        var settings = Main.Settings.BattleTemplate.Export.GetSettings(programLanguage, sav.Context);
+        var result = ShowdownParsing.GetShowdownSets(list, Environment.NewLine + Environment.NewLine, settings);
         if (string.IsNullOrWhiteSpace(result))
             return;
         if (WinFormsUtil.SetClipboardText(result))
@@ -1476,4 +1551,94 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         try { File.Delete(path); }
         catch (Exception ex) { Debug.WriteLine(ex.Message); }
     }
+
+    private EntitySearchSetup? _searchForm;
+    private Func<PKM, bool>? _searchFilter;
+
+    private void B_SearchBox_Click(object sender, EventArgs e)
+    {
+        if (_searchForm is not null)
+        {
+            if (ModifierKeys == Keys.Alt)
+            {
+                _searchForm.ForceReset();
+                _searchForm.Hide();
+                return;
+            }
+            if (ModifierKeys.HasFlag(Keys.Shift))
+            {
+                BoxSearchSeek(reverse: ModifierKeys.HasFlag(Keys.Control));
+                return;
+            }
+        }
+        if (_searchForm is null || !_searchForm.IsSameSaveFile(SAV))
+            _searchForm = CreateSearcher(SAV, EditEnv.PKMEditor);
+
+        // Set the searcher Position immediately to the right of this parent form, and vertically aligned tops of forms.
+        var parent = FindForm();
+        if (parent is not null)
+        {
+            var location = parent.Location;
+            location.X += parent.Width;
+            _searchForm.StartPosition = FormStartPosition.Manual;
+            _searchForm.Location = location;
+            _searchForm.Owner = parent;
+        }
+
+        _searchForm.Show();
+        _searchForm.BringToFront();
+    }
+
+    private EntitySearchSetup CreateSearcher(SaveFile sav, IPKMView edit)
+    {
+        BoxSearchClear();
+        var result = new EntitySearchSetup();
+        result.Initialize(sav, edit);
+
+        result.ResetRequested += UpdateSearch;
+        result.SearchRequested += UpdateSearch;
+        result.SeekNext += SeekNext;
+        result.SeekPrevious += SeekPrevious;
+
+        return result;
+    }
+
+    private void SeekNext(object? sender, EventArgs e) => BoxSearchSeek();
+    private void SeekPrevious(object? sender, EventArgs e) => BoxSearchSeek(reverse: true);
+
+    private void UpdateSearch(object? sender, EventArgs e)
+    {
+        _searchFilter = _searchForm!.SearchFilter;
+        EditEnv.Slots.Publisher.UpdateFilter(_searchFilter);
+    }
+
+    private void BoxSearchClear()
+    {
+        _searchFilter = null;
+        EditEnv.Slots.Publisher.UpdateFilter(_searchFilter);
+        if (_searchForm is { } form)
+        {
+            form.ResetRequested -= UpdateSearch;
+            form.SearchRequested -= UpdateSearch;
+            form.Close(); // get rid of previous searcher if it exists
+        }
+        _searchForm = null;
+    }
+
+    private void BoxSearchAlignButton()
+    {
+        // Move the Search button so that it is vertically aligned to the navigation buttons, and right-edge aligned with the last picturebox in the grid.
+        var navButton = Box.B_BoxRight;
+        B_SearchBox.Top = Box.Top + navButton.Top;
+        B_SearchBox.Left = Box.Left + Box.BoxPokeGrid.Right - B_SearchBox.Width;
+    }
+
+    private void BoxSearchSeek(bool reverse = false)
+    {
+        if (_searchFilter is null)
+            return;
+        Box.SeekNext(_searchFilter, reverse);
+    }
+
+    public void ApplyNewFilter(Func<PKM, bool>? filter, bool reload = true) => Box.ApplySearchFilter(filter, reload);
 }

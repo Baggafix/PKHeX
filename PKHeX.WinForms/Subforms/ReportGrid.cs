@@ -15,6 +15,9 @@ namespace PKHeX.WinForms;
 
 public partial class ReportGrid : Form
 {
+    public IPropertyProvider PropertyProvider { get; init; } = DefaultPropertyProvider.Instance;
+    private sealed class PokemonList<T> : SortableBindingList<T> where T : class;
+
     public ReportGrid()
     {
         InitializeComponent();
@@ -50,8 +53,6 @@ public partial class ReportGrid : Form
 
         dgData.ContextMenuStrip = mnu;
     }
-
-    private sealed class PokemonList<T> : SortableBindingList<T> where T : class;
 
     public void PopulateData(IReadOnlyList<SlotCache> data) => PopulateData(data, [], []);
 
@@ -108,8 +109,7 @@ public partial class ReportGrid : Form
             if (prop.Length == 0)
                 continue;
             var col = dgData.Columns[prop];
-            if (col is not null)
-                col.Visible = false;
+            col?.Visible = false;
         }
     }
 
@@ -143,8 +143,6 @@ public partial class ReportGrid : Form
         ArrayPool<string>.Shared.Return(rent, true);
     }
 
-    public IPropertyProvider PropertyProvider { get; init; } = DefaultPropertyProvider.Instance;
-
     private bool TryGetCustomCell(PKM pk, string prop, [NotNullWhen(true)] out string? result)
     {
         if (PropertyProvider.TryGetProperty(pk, prop, out result))
@@ -161,6 +159,8 @@ public partial class ReportGrid : Form
 
     private void PromptSaveCSV(object sender, FormClosingEventArgs e)
     {
+        if (ModifierKeys.HasFlag(Keys.Shift))
+            return;
         if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, MsgReportExportCSV) != DialogResult.Yes)
             return;
         using var savecsv = new SaveFileDialog();
@@ -215,7 +215,7 @@ public partial class ReportGrid : Form
     private static string[] ConvertTabbedToRedditTable(ReadOnlySpan<string> lines)
     {
         string[] newlines = new string[lines.Length + 1];
-        int tabcount = lines[0].AsSpan().Count('\t');
+        int tabcount = lines[0].Count('\t');
 
         newlines[0] = lines[0].Replace('\t', '|');
         newlines[1] = string.Join(":--:", Enumerable.Repeat('|', tabcount + 2)); // 2 pipes for each end

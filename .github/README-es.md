@@ -24,13 +24,13 @@ PKHeX espera archivos de guardado que no estén cifrados con las claves específ
 
 ## Capturas de Pantalla
 
-![Pantalla principal](https://i.imgur.com/oM407mV.png)
+![Pantalla principal](https://i.imgur.com/JFKIhnz.png)
 
 ## Building
 
-PKHeX es una aplicación de Windows Forms que requiere [.NET 9.0](https://dotnet.microsoft.com/download/dotnet/9.0).
+PKHeX es una aplicación de Windows Forms que requiere [.NET 10.0](https://dotnet.microsoft.com/download/dotnet/10.0).
 
-El archivo ejecutable puede ser construido con cualquier compilador que soporte C# 13.
+El archivo ejecutable puede ser construido con cualquier compilador que soporte C# 14.
 
 ### Configuraciones del Build
 

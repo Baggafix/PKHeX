@@ -88,7 +88,7 @@ public static class MethodJ
             {
                 if (CheckEncounterActivation(enc, ref result))
                 {
-                    if (result.IsNoRequirement())
+                    if (result.IsNoRequirement)
                         return result;
                     if (result.IsBetterThan(prefer))
                         prefer = result;
@@ -101,6 +101,12 @@ public static class MethodJ
         }
     }
 
+    /// <summary>
+    /// Indicates if the encounter cannot be triggered via Sweet Scent, and must be triggered via random means.
+    /// </summary>
+    /// <remarks>
+    /// For Honey Trees, there's slightly special logic needing this to return true to handle in the same branch as non-Sweet Scent encounters.
+    /// </remarks>
     public static bool IsEncounterCheckApplicable(SlotType4 type) => type is HoneyTree || type.IsFishingRodType();
 
     /// <inheritdoc cref="MethodK.SkipToLevelRand{T}"/>
@@ -340,14 +346,14 @@ public static class MethodJ
         result = default; return false;
     }
 
-    public static bool IsLevelRand<T>(T enc) where T : IEncounterSlot4 => enc.Type.IsLevelRandDPPt();
+    public static bool IsLevelRand<T>(T enc) where T : IEncounterSlot4 => enc.Type.IsLevelRandDPPt;
 
     private static bool IsSlotValidFrom1Skip<T>(FrameCheckDetails<T> ctx, out uint result)
         where T : IEncounterSlot4
     {
         if (IsLevelRand(ctx.Encounter))
         {
-            if (ctx.Encounter.IsFixedLevel() || IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev2))
+            if (ctx.Encounter.IsFixedLevel || IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev2))
             {
                 if (IsSlotValid(ctx.Encounter, ctx.Prev3))
                 { result = ctx.Seed4; return true; }
@@ -366,7 +372,7 @@ public static class MethodJ
     {
         if (IsLevelRand(ctx.Encounter))
         {
-            if (ctx.Encounter.IsFixedLevel() || IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev1))
+            if (ctx.Encounter.IsFixedLevel|| IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev1))
             {
                 if (IsSlotValid(ctx.Encounter, ctx.Prev2))
                 { result = ctx.Seed3; return true; }
@@ -413,7 +419,7 @@ public static class MethodJ
             if (IsStaticMagnetFail(ctx.Prev3)) // should have triggered
             { result = 0; return false; }
 
-            if (ctx.Encounter.IsFixedLevel() || IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev1))
+            if (ctx.Encounter.IsFixedLevel || IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev1))
             {
                 if (ctx.Encounter.IsSlotValidStaticMagnet(ctx.Prev2, out lead))
                 { result = ctx.Seed4; return true; }
@@ -438,7 +444,7 @@ public static class MethodJ
             if (IsStaticMagnetPass(ctx.Prev3)) // should have triggered
             { result = 0; return false; }
 
-            if (ctx.Encounter.IsFixedLevel() || IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev1))
+            if (ctx.Encounter.IsFixedLevel || IsLevelValid(ctx.Encounter, ctx.LevelMin, ctx.LevelMax, ctx.Format, ctx.Prev1))
             {
                 if (IsSlotValid(ctx.Encounter, ctx.Prev2))
                 { result = ctx.Seed4; return true; }
@@ -472,9 +478,9 @@ public static class MethodJ
 
     private static bool IsOriginalLevelValid(byte min, byte max, byte format, uint level)
     {
-        if (format == Format)
+        if (format == Format && min > 1)
             return level == min; // Met Level matches
-        return LevelRangeExtensions.IsLevelWithinRange((int)level, min, max);
+        return LevelRangeExtensions.IsLevelWithinRange((byte)level, min, max);
     }
 
     public static uint GetRandomLevel<T>(T enc, uint seed, LeadRequired lead) where T : IEncounterSlot4

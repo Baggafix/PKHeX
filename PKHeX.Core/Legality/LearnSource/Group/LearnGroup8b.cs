@@ -3,7 +3,7 @@ using System;
 namespace PKHeX.Core;
 
 /// <summary>
-/// Group that checks the source of a move in <see cref="GameVersion.BDSP"/>.
+/// Group that checks the source of a move in <see cref="EntityContext.Gen8b"/>.
 /// </summary>
 public sealed class LearnGroup8b : ILearnGroup
 {
@@ -25,6 +25,7 @@ public sealed class LearnGroup8b : ILearnGroup
         for (var i = 0; i < evos.Length; i++)
             Check(result, current, pk, evos[i], i);
 
+        // Egg moves can be shared, which is the same list used by Underground moves.
         CheckSharedMoves(result, current, evos[0]);
 
         if (MoveResult.AllParsed(result))
@@ -32,7 +33,7 @@ public sealed class LearnGroup8b : ILearnGroup
 
         var home = LearnGroupHOME.Instance;
         if (option != LearnOption.HOME && home.HasVisited(pk, history))
-            return home.Check(result, current, pk, history, enc, types);
+            return home.Check(result, current, pk, history, enc, types, option);
         return false;
     }
 
@@ -129,18 +130,8 @@ public sealed class LearnGroup8b : ILearnGroup
     private static void FlagEncounterMoves(IEncounterTemplate enc, Span<bool> result)
     {
         if (enc is IMoveset { Moves: { HasMoves: true } x })
-        {
-            result[x.Move4] = true;
-            result[x.Move3] = true;
-            result[x.Move2] = true;
-            result[x.Move1] = true;
-        }
+            x.FlagMoves(result);
         if (enc is IRelearn { Relearn: { HasMoves: true } r })
-        {
-            result[r.Move4] = true;
-            result[r.Move3] = true;
-            result[r.Move2] = true;
-            result[r.Move1] = true;
-        }
+            r.FlagMoves(result);
     }
 }

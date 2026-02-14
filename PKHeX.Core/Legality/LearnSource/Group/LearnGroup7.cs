@@ -3,7 +3,7 @@ using System;
 namespace PKHeX.Core;
 
 /// <summary>
-/// Group that checks the source of a move in <see cref="GameVersion.Gen7"/>.
+/// Group that checks the source of a move in <see cref="EntityContext.Gen7"/>.
 /// </summary>
 public sealed class LearnGroup7 : ILearnGroup
 {
@@ -13,10 +13,10 @@ public sealed class LearnGroup7 : ILearnGroup
 
     public ILearnGroup? GetPrevious(PKM pk, EvolutionHistory history, IEncounterTemplate enc, LearnOption option) => enc.Generation switch
     {
-        Generation => null,
-        1 => history.HasVisitedGen1 ? LearnGroup1.Instance : null,
-     <= 2 => history.HasVisitedGen2 ? LearnGroup2.Instance : null,
-        _ => history.HasVisitedGen6 ? LearnGroup6.Instance : null,
+        1 => LearnGroup1.Instance,
+        2 => LearnGroup2.Instance,
+        (3 or 4 or 5 or 6) => LearnGroup6.Instance,
+        _ => null,
     };
 
     public bool HasVisited(PKM pk, EvolutionHistory history) => history.HasVisitedGen7;
@@ -29,13 +29,13 @@ public sealed class LearnGroup7 : ILearnGroup
         for (var i = 0; i < evos.Length; i++)
             Check(result, current, pk, evos[i], i, types, option, mode);
 
-        if (option.IsPast() && types.HasFlag(MoveSourceType.Encounter) && enc is EncounterEgg { Generation: Generation } egg)
+        if (option.IsPast() && types.HasFlag(MoveSourceType.Encounter) && enc is EncounterEgg7 egg)
             CheckEncounterMoves(result, current, egg);
 
         return MoveResult.AllParsed(result);
     }
 
-    private static void CheckEncounterMoves(Span<MoveResult> result, ReadOnlySpan<ushort> current, EncounterEgg egg)
+    private static void CheckEncounterMoves(Span<MoveResult> result, ReadOnlySpan<ushort> current, EncounterEgg7 egg)
     {
         ILearnSource inst = egg.Version > GameVersion.MN ? LearnSource7USUM.Instance : LearnSource7SM.Instance;
         var eggMoves = inst.GetEggMoves(egg.Species, egg.Form);
@@ -201,18 +201,8 @@ public sealed class LearnGroup7 : ILearnGroup
     private static void FlagEncounterMoves(IEncounterTemplate enc, Span<bool> result)
     {
         if (enc is IMoveset { Moves: { HasMoves: true } x })
-        {
-            result[x.Move4] = true;
-            result[x.Move3] = true;
-            result[x.Move2] = true;
-            result[x.Move1] = true;
-        }
+            x.FlagMoves(result);
         if (enc is IRelearn { Relearn: { HasMoves: true } r })
-        {
-            result[r.Move4] = true;
-            result[r.Move3] = true;
-            result[r.Move2] = true;
-            result[r.Move1] = true;
-        }
+            r.FlagMoves(result);
     }
 }

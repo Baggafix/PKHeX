@@ -99,7 +99,7 @@ public static class SaveFinder
 
         // return newest save file path that is valid
         var byMostRecent = possiblePaths.OrderByDescending(File.GetLastWriteTimeUtc);
-        var saves = byMostRecent.Select(SaveUtil.GetVariantSAV);
+        var saves = byMostRecent.Select(SaveUtil.GetSaveFile);
         return saves.FirstOrDefault(z => z?.ChecksumsValid == true);
     }
 
@@ -122,8 +122,7 @@ public static class SaveFinder
         var byMostRecent = possiblePaths.OrderByDescending(File.GetLastWriteTimeUtc);
         foreach (var s in byMostRecent)
         {
-            var sav = SaveUtil.GetVariantSAV(s);
-            if (sav is not null)
+            if (SaveUtil.TryGetSaveFile(s, out var sav))
                 yield return sav;
         }
     }
@@ -151,7 +150,7 @@ public static class SaveFinder
             if (token.IsCancellationRequested)
                 break;
 
-            if (!SaveUtil.GetSavesFromFolder(token, folder, true, out IEnumerable<string> files, ignoreBackups))
+            if (!SaveUtil.GetSavesFromFolder(folder, true, token, out IEnumerable<string> files, ignoreBackups))
             {
                 if (files is not string[] msg) // should always return string[]
                     continue;
@@ -176,13 +175,13 @@ public static class SaveFinder
     /// True if a valid save file was found, false otherwise.
     /// </returns>
     /// <inheritdoc cref="FindMostRecentSaveFile(IReadOnlyList{string},CancellationToken,string[])"/>
-    public static bool TryDetectSaveFile(CancellationToken token, [NotNullWhen(true)] out SaveFile? sav) => TryDetectSaveFile(token, DriveList, out sav);
+    public static bool TryDetectSaveFile(CancellationToken token, [NotNullWhen(true)] out SaveFile? result) => TryDetectSaveFile(DriveList, token, out result);
 
     /// <inheritdoc cref="TryDetectSaveFile(CancellationToken, out SaveFile)"/>
-    public static bool TryDetectSaveFile(CancellationToken token, IReadOnlyList<string> drives, [NotNullWhen(true)] out SaveFile? sav)
+    public static bool TryDetectSaveFile(IReadOnlyList<string> drives, CancellationToken token, [NotNullWhen(true)] out SaveFile? result)
     {
-        sav = FindMostRecentSaveFile(drives, CustomBackupPaths, token);
-        var path = sav?.Metadata.FilePath;
+        result = FindMostRecentSaveFile(drives, CustomBackupPaths, token);
+        var path = result?.Metadata.FilePath;
         return File.Exists(path);
     }
 

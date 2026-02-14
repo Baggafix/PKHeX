@@ -15,7 +15,7 @@ public static class HiddenPower
     /// <param name="context">Generation format</param>
     public static int GetType(ReadOnlySpan<int> IVs, EntityContext context)
     {
-        if (context.Generation() <= 2)
+        if (context.Generation <= 2)
             return GetTypeGB(IVs);
         return GetType(IVs);
     }
@@ -71,6 +71,11 @@ public static class HiddenPower
     /// </summary>
     public const int TypeCount = 16;
 
+    /// <summary>
+    /// Checks if the input Hidden Power Type is not one of the 15 valid types.
+    /// </summary>
+    /// <param name="type">Hidden Power Type</param>
+    /// <returns><see langword="true"/> if the input Hidden Power Type is not one of the 15 valid types.</returns>
     public static bool IsInvalidType(int type) => (uint)type >= TypeCount;
 
     /// <summary>
@@ -148,7 +153,7 @@ public static class HiddenPower
     /// <returns>True if the Hidden Power of the <see cref="IVs"/> is obtained, with or without modifications</returns>
     public static bool SetIVsForType(int hiddenPowerType, Span<int> IVs, EntityContext context)
     {
-        if (context.Generation() <= 2)
+        if (context.Generation <= 2)
             return SetTypeGB(hiddenPowerType, IVs);
         return SetIVsForType(hiddenPowerType, IVs);
     }
@@ -231,9 +236,9 @@ public static class HiddenPower
     /// <param name="type">Hidden Power Type</param>
     /// <param name="ivs">Individual Values (H/A/B/S/C/D)</param>
     /// <param name="context">Generation specific format</param>
-    public static void SetIVs(int type, Span<int> ivs, EntityContext context = PKX.Context)
+    public static void SetIVs(int type, Span<int> ivs, EntityContext context = Latest.Context)
     {
-        if (context.Generation() <= 2)
+        if (context.Generation <= 2)
         {
             ivs[1] = (ivs[1] & 0b1100) | (type >> 2);
             ivs[2] = (ivs[2] & 0b1100) | (type & 3);

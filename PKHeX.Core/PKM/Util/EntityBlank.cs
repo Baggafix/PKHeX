@@ -46,10 +46,11 @@ public static class EntityBlank
 
     public static PKM GetBlank(byte gen, GameVersion version) => gen switch
     {
-        1 when version == GameVersion.BU => new PK1(true),
-        7 when GameVersion.Gen7b.Contains(version) => new PB7(),
-        8 when GameVersion.BDSP.Contains(version) => new PB8(),
-        8 when GameVersion.PLA == version => new PA8(),
+        1 when version is GameVersion.BU => new PK1(true),
+        7 when version is GameVersion.GP or GameVersion.GE => new PB7(),
+        8 when version is GameVersion.BD or GameVersion.SP => new PB8(),
+        8 when version is GameVersion.PLA => new PA8(),
+        9 when version is GameVersion.ZA => new PA9(),
         _ => GetBlank(gen),
     };
 
@@ -84,6 +85,8 @@ public static class EntityBlank
             return new PK7();
         if (PersonalTable.SV.IsPresentInGame(species, form))
             return new PK9();
+        if (PersonalTable.ZA.IsPresentInGame(species, form))
+            return new PA9();
         return new PB7();
     }
 }

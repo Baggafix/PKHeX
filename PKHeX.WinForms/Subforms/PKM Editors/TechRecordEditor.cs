@@ -38,6 +38,7 @@ public partial class TechRecordEditor : Form
     {
         var names = GameInfo.Strings.Move;
         var indexes = Record.Permit.RecordPermitIndexes;
+        var baseRecordIndex = context == EntityContext.Gen9a ? 1 : 0; // TM001 in Legends: Z-A but is 0-index bits.
         // Add the records to the datagrid.
         dgv.Rows.Add(indexes.Length);
         var evos = Legality.Info.EvoChainsAllGens.Get(context);
@@ -50,15 +51,15 @@ public partial class TechRecordEditor : Form
 
             bool isValid = Record.Permit.IsRecordPermitted(i);
             if (isValid)
-                SetStyleColor(cell, Color.LightGreen);
+                SetStyleColor(cell, WinFormsUtil.ColorValid);
             else if (Record.IsRecordPermitted(evos, i))
-                SetStyleColor(cell, Color.Yellow);
+                SetStyleColor(cell, WinFormsUtil.ColorHint);
             else
-                SetStyleColor(cell, Color.LightCoral);
+                SetStyleColor(cell, WinFormsUtil.ColorSuspect);
             if (currentMoves.Contains(move))
-                cells[ColumnName].Style.BackColor = Color.LightBlue;
+                cells[ColumnName].Style.BackColor = WinFormsUtil.ColorAccept;
 
-            cells[ColumnIndex].Value = i.ToString("000");
+            cells[ColumnIndex].Value = (i+ baseRecordIndex).ToString("000");
             cells[ColumnTypeIcon].Value = TypeSpriteUtil.GetTypeSpriteIconSmall(type);
             cells[ColumnType].Value = type.ToString("00") + (isValid ? 0 : 1) + names[move]; // type -> valid -> name sorting
             cells[ColumnName].Value = names[move];

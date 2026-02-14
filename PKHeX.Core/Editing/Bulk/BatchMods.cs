@@ -36,10 +36,10 @@ public static class BatchMods
         new TypeSuggestion<PKM>(nameof(PKM.HealPP), p => p.HealPP()),
         new TypeSuggestion<PKM>(nameof(IHyperTrain.HyperTrainFlags), p => p.SetSuggestedHyperTrainingData()),
 
-        new TypeSuggestion<PKM>(nameof(PKM.Move1_PP), p => p.SetSuggestedMovePP(0)),
-        new TypeSuggestion<PKM>(nameof(PKM.Move2_PP), p => p.SetSuggestedMovePP(1)),
-        new TypeSuggestion<PKM>(nameof(PKM.Move3_PP), p => p.SetSuggestedMovePP(2)),
-        new TypeSuggestion<PKM>(nameof(PKM.Move4_PP), p => p.SetSuggestedMovePP(3)),
+        new TypeSuggestion<PKM>(nameof(PKM.Move1_PP), p => p.HealPPIndex(0)),
+        new TypeSuggestion<PKM>(nameof(PKM.Move2_PP), p => p.HealPPIndex(1)),
+        new TypeSuggestion<PKM>(nameof(PKM.Move3_PP), p => p.HealPPIndex(2)),
+        new TypeSuggestion<PKM>(nameof(PKM.Move4_PP), p => p.HealPPIndex(3)),
 
         new ComplexSuggestion(nameof(PKM.CurrentFriendship), (_, _, info) => BatchModifications.SetSuggestedCurrentFriendship(info)),
         new ComplexSuggestion(nameof(PKM.OriginalTrainerFriendship), (_, _, info) => BatchModifications.SetSuggestedOriginalTrainerFriendship(info)),
@@ -52,6 +52,7 @@ public static class BatchMods
         new ComplexSuggestion(nameof(PKM.CurrentLevel), (_, _, info) => BatchModifications.SetMinimumCurrentLevel(info)),
         new ComplexSuggestion(PROP_CONTESTSTATS, p => p is IContestStats, (_, value, info) => BatchModifications.SetContestStats(info.Entity, info.Legality, value)),
         new ComplexSuggestion(PROP_MOVEMASTERY, (_, value, info) => BatchModifications.SetSuggestedMasteryData(info, value)),
+        new ComplexSuggestion(PROP_MOVEPLUS, (_, value, info) => BatchModifications.SetSuggestedMovePlusData(info, value)),
     ];
 
     private static DateOnly ParseDate(ReadOnlySpan<char> val) => DateOnly.ParseExact(val, "yyyyMMdd", CultureInfo.InvariantCulture);
@@ -74,9 +75,9 @@ public static class BatchMods
         // Shiny
         new ComplexSet(nameof(PKM.PID),
             value => value.StartsWith(CONST_SHINY),
-            (pk, cmd) => CommonEdits.SetShiny(pk, GetRequestedShinyState(cmd.PropertyValue))),
+            (pk, cmd) => pk.SetShiny(GetRequestedShinyState(cmd.PropertyValue))),
 
-        new ComplexSet(nameof(PKM.Species), value => value is "0", (pk, _) => pk.Data.AsSpan().Clear()),
+        new ComplexSet(nameof(PKM.Species), value => value is "0", (pk, _) => pk.Data.Clear()),
         new ComplexSet(nameof(PKM.IsNicknamed), value => value.Equals("false", StringComparison.OrdinalIgnoreCase), (pk, _) => pk.SetDefaultNickname()),
 
         // Complicated

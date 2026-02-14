@@ -13,9 +13,9 @@ public sealed class SAV9SV : SaveFile, ISaveBlock9Main, ISCBlockArray, ISaveFile
     public override string Extension => string.Empty;
     public override IReadOnlyList<string> PKMExtensions => EntityFileExtension.GetExtensionsHOME();
 
-    public SAV9SV(byte[] data) : this(SwishCrypto.Decrypt(data)) { }
+    public SAV9SV(Memory<byte> data) : this(SwishCrypto.Decrypt(data.Span)) { }
 
-    private SAV9SV(IReadOnlyList<SCBlock> blocks) : base([])
+    private SAV9SV(IReadOnlyList<SCBlock> blocks) : base(Memory<byte>.Empty)
     {
         AllBlocks = blocks;
         Blocks = new SaveBlockAccessor9SV(this);
@@ -56,7 +56,7 @@ public sealed class SAV9SV : SaveFile, ISaveBlock9Main, ISCBlockArray, ISaveFile
     public override bool ChecksumsValid => true;
     public override string ChecksumInfo => string.Empty;
     protected override void SetChecksums() { } // None!
-    protected override byte[] GetFinalData() => SwishCrypto.Encrypt(AllBlocks);
+    protected override Memory<byte> GetFinalData() => SwishCrypto.Encrypt(AllBlocks);
 
     public override PersonalTable9SV Personal => PersonalTable.SV;
     public override ReadOnlySpan<ushort> HeldItems => Legal.HeldItems_SV;
@@ -164,7 +164,7 @@ public sealed class SAV9SV : SaveFile, ISaveBlock9Main, ISCBlockArray, ISaveFile
     public override int PlayedSeconds { get => Played.PlayedSeconds; set => Played.PlayedSeconds = value; }
 
     // Inventory
-    public override IReadOnlyList<InventoryPouch> Inventory { get => Items.Inventory; set => Items.Inventory = value; }
+    public override PlayerBag9 Inventory => new(this);
 
     // Storage
     public override int GetPartyOffset(int slot) => Party + (SIZE_PARTY * slot);
@@ -244,7 +244,7 @@ public sealed class SAV9SV : SaveFile, ISaveBlock9Main, ISCBlockArray, ISaveFile
 
     public override StorageSlotSource GetBoxSlotFlags(int index)
     {
-        int team = Array.IndexOf(TeamIndexes.TeamSlots, index);
+        int team = TeamIndexes.TeamSlots.IndexOf(index);
         if (team < 0)
           return StorageSlotSource.None;
 
@@ -312,9 +312,11 @@ public sealed class SAV9SV : SaveFile, ISaveBlock9Main, ISCBlockArray, ISaveFile
         set => Blocks.GetBlock(SaveBlockAccessor9SV.KBoxWallpapers).Data[BoxLayout9.BoxCount] = value;
     }
 
-    public ThrowStyle9 ThrowStyle {
-        get {
-            if(Blocks.TryGetBlock(SaveBlockAccessor9SV.KThrowStyle, out var throwStyleBlock))
+    public ThrowStyle9 ThrowStyle
+    {
+        get
+        {
+            if (Blocks.TryGetBlock(SaveBlockAccessor9SV.KThrowStyle, out var throwStyleBlock))
                 return (ThrowStyle9)throwStyleBlock.Data[0];
             return ThrowStyle9.OriginalStyle;
         }

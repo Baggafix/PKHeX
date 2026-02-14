@@ -23,11 +23,18 @@ public sealed record StringInstruction(string PropertyName, string PropertyValue
 {
     public string PropertyValue { get; private set; } = PropertyValue;
 
-    public void SetScreenedValue(ReadOnlySpan<string> arr)
+    /// <summary>
+    /// Sets the <see cref="PropertyValue"/> to the index of the value in the input <see cref="arr"/>, if it exists.
+    /// </summary>
+    /// <param name="arr">List of values to search for the <see cref="PropertyValue"/>.</param>
+    /// <returns>True if the value was found and set, false otherwise.</returns>
+    public bool SetScreenedValue(ReadOnlySpan<string> arr)
     {
         int index = arr.IndexOf(PropertyValue);
-        if ((uint)index < arr.Length)
-            PropertyValue = index.ToString();
+        if ((uint)index >= arr.Length)
+            return false;
+        PropertyValue = index.ToString();
+        return true;
     }
 
     /// <summary>
@@ -238,7 +245,7 @@ public sealed record StringInstruction(string PropertyName, string PropertyValue
         if (line.Length is 0)
             return false;
         var comparer = GetComparer(line[0]);
-        if (!comparer.IsSupportedComparer())
+        if (!comparer.IsSupported)
             return false;
         return TryParseSplitTuple(line[1..], ref entry, comparer);
     }
@@ -319,50 +326,50 @@ public enum InstructionComparer : byte
 /// </summary>
 public static class InstructionComparerExtensions
 {
-    /// <summary>
-    /// Indicates if the <see cref="comparer"/> is supported by the logic.
-    /// </summary>
-    /// <param name="comparer">Type of comparison requested</param>
-    /// <returns>True if supported, false if unsupported.</returns>
-    public static bool IsSupportedComparer(this InstructionComparer comparer) => comparer switch
+    extension(InstructionComparer comparer)
     {
-        IsEqual => true,
-        IsNotEqual => true,
-        IsGreaterThan => true,
-        IsGreaterThanOrEqual => true,
-        IsLessThan => true,
-        IsLessThanOrEqual => true,
-        _ => false,
-    };
+        /// <summary>
+        /// Indicates if the <see cref="comparer"/> is supported by the logic.
+        /// </summary>
+        /// <returns>True if supported, false if unsupported.</returns>
+        public bool IsSupported => comparer switch
+        {
+            IsEqual => true,
+            IsNotEqual => true,
+            IsGreaterThan => true,
+            IsGreaterThanOrEqual => true,
+            IsLessThan => true,
+            IsLessThanOrEqual => true,
+            _ => false,
+        };
 
-    /// <summary>
-    /// Checks if the compare operator is satisfied by a boolean comparison result.
-    /// </summary>
-    /// <param name="comparer">Type of comparison requested</param>
-    /// <param name="compareResult">Result from Equals comparison</param>
-    /// <returns>True if satisfied</returns>
-    /// <remarks>Only use this method if the comparison is boolean only. Use the <see cref="IsCompareOperator"/> otherwise.</remarks>
-    public static bool IsCompareEquivalence(this InstructionComparer comparer, bool compareResult) => comparer switch
-    {
-        IsEqual => compareResult,
-        IsNotEqual => !compareResult,
-        _ => false,
-    };
+        /// <summary>
+        /// Checks if the compare operator is satisfied by a boolean comparison result.
+        /// </summary>
+        /// <param name="compareResult">Result from Equals comparison</param>
+        /// <returns>True if satisfied</returns>
+        /// <remarks>Only use this method if the comparison is boolean only. Use the <see cref="IsCompareOperator"/> otherwise.</remarks>
+        public bool IsCompareEquivalence(bool compareResult) => comparer switch
+        {
+            IsEqual => compareResult,
+            IsNotEqual => !compareResult,
+            _ => false,
+        };
 
-    /// <summary>
-    /// Checks if the compare operator is satisfied by the <see cref="IComparable.CompareTo"/> result.
-    /// </summary>
-    /// <param name="comparer">Type of comparison requested</param>
-    /// <param name="compareResult">Result from CompareTo</param>
-    /// <returns>True if satisfied</returns>
-    public static bool IsCompareOperator(this InstructionComparer comparer, int compareResult) => comparer switch
-    {
-        IsEqual => compareResult is 0,
-        IsNotEqual => compareResult is not 0,
-        IsGreaterThan => compareResult > 0,
-        IsGreaterThanOrEqual => compareResult >= 0,
-        IsLessThan => compareResult < 0,
-        IsLessThanOrEqual => compareResult <= 0,
-        _ => false,
-    };
+        /// <summary>
+        /// Checks if the compare operator is satisfied by the <see cref="IComparable.CompareTo"/> result.
+        /// </summary>
+        /// <param name="compareResult">Result from CompareTo</param>
+        /// <returns>True if satisfied</returns>
+        public bool IsCompareOperator(int compareResult) => comparer switch
+        {
+            IsEqual => compareResult is 0,
+            IsNotEqual => compareResult is not 0,
+            IsGreaterThan => compareResult > 0,
+            IsGreaterThanOrEqual => compareResult >= 0,
+            IsLessThan => compareResult < 0,
+            IsLessThanOrEqual => compareResult <= 0,
+            _ => false,
+        };
+    }
 }

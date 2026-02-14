@@ -1,5 +1,4 @@
 using System;
-using System.Drawing;
 using System.Windows.Forms;
 using PKHeX.Core;
 
@@ -25,8 +24,8 @@ public partial class PKMEditor
         {
             // Sanity check level and EXP
             var current = pk.CurrentLevel;
-            if (current == 100) // clamp back to max EXP
-                pk.CurrentLevel = 100;
+            if (current == Experience.MaxLevel) // clamp back to max EXP
+                pk.CurrentLevel = Experience.MaxLevel;
         }
 
         CB_Species.SelectedValue = (int)pk.Species;
@@ -313,7 +312,7 @@ public partial class PKMEditor
         else
             pk.MetDate = DateOnly.FromDateTime(CAL_MetDate.Value);
 
-        pk.Ability = WinFormsUtil.GetIndex(HaX ? DEV_Ability : CB_Ability);
+        pk.Ability = WinFormsUtil.GetIndex(HaX || pk is PA9 ? DEV_Ability : CB_Ability);
     }
 
     private void LoadMisc6(PKM pk)
@@ -330,7 +329,7 @@ public partial class PKMEditor
         LoadRelearnMoves(pk);
         LoadHandlingTrainer(pk);
 
-        if (pk is IRegionOrigin tr)
+        if (pk is IRegionOriginReadOnly tr)
             LoadGeolocation(tr);
     }
 
@@ -349,7 +348,7 @@ public partial class PKMEditor
             SaveGeolocation(tr);
     }
 
-    private void LoadGeolocation(IRegionOrigin pk)
+    private void LoadGeolocation(IRegionOriginReadOnly pk)
     {
         CB_Country.SelectedValue = (int)pk.Country;
         CB_SubRegion.SelectedValue = (int)pk.Region;
@@ -385,13 +384,13 @@ public partial class PKMEditor
     {
         if (handler == 0) // OT
         {
-            GB_OT.ForeColor = Color.Red;
+            GB_OT.ForeColor = WinFormsUtil.ColorWarn;
             GB_nOT.ResetForeColor();
             CB_Handler.SelectedIndex = 0;
         }
         else // Handling Trainer
         {
-            GB_nOT.ForeColor = Color.Red;
+            GB_nOT.ForeColor = WinFormsUtil.ColorWarn;
             GB_OT.ResetForeColor();
             CB_Handler.SelectedIndex = 1;
         }
@@ -419,7 +418,7 @@ public partial class PKMEditor
             return 2;
 
         var abils = (IPersonalAbility12)pi;
-        if (abils.GetIsAbility12Same())
+        if (abils.IsAbility12Same)
             return pk.PIDAbility;
         return abilityIndex;
     }
@@ -506,5 +505,24 @@ public partial class PKMEditor
         pk9.TeraTypeOriginal = (MoveType)WinFormsUtil.GetIndex(Stats.CB_TeraTypeOriginal);
         pk9.TeraTypeOverride = (MoveType)WinFormsUtil.GetIndex(Stats.CB_TeraTypeOverride);
         pk9.ObedienceLevel = (byte)Util.ToInt32(TB_ObedienceLevel.Text);
+    }
+
+    private void LoadMisc9(PA9 pk9)
+    {
+        CB_StatNature.SelectedValue = (int)pk9.StatNature;
+        CB_HTLanguage.SelectedValue = (int)pk9.HandlingTrainerLanguage;
+        TB_HomeTracker.Text = pk9.Tracker.ToString("X16");
+        CB_BattleVersion.SelectedValue = (int)pk9.BattleVersion;
+        TB_ObedienceLevel.Text = pk9.ObedienceLevel.ToString();
+        Stats.CHK_IsAlpha.Checked = pk9.IsAlpha;
+    }
+
+    private void SaveMisc9(PA9 pk9)
+    {
+        pk9.StatNature = (Nature)WinFormsUtil.GetIndex(CB_StatNature);
+        pk9.HandlingTrainerLanguage = (byte)WinFormsUtil.GetIndex(CB_HTLanguage);
+        pk9.BattleVersion = (GameVersion)WinFormsUtil.GetIndex(CB_BattleVersion);
+        pk9.ObedienceLevel = (byte)Util.ToInt32(TB_ObedienceLevel.Text);
+        pk9.IsAlpha = Stats.CHK_IsAlpha.Checked;
     }
 }

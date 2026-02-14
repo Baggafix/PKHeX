@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using static PKHeX.Core.GameVersion;
 using static PKHeX.Core.EvolutionUtil;
 
 namespace PKHeX.Core;
@@ -14,13 +13,19 @@ public sealed class EvolutionGroupHOME : IEvolutionGroup
     private static readonly EvolutionEnvironment8b BDSP = new();
     private static readonly EvolutionEnvironment9 SV = new();
 
-    public IEvolutionGroup? GetNext(PKM pk, EvolutionOrigin enc) => null;
+    public IEvolutionGroup? GetNext(PKM pk, EvolutionOrigin enc)
+    {
+        return null; // TODO HOME ZA2: Re-enable when we have more info.
+        // if (pk.Format <= 9 && pk.Context is not EntityContext.Gen9a)
+        //     return null;
+        // return EvolutionGroupHOME.Instance;
+    }
 
     public IEvolutionGroup? GetPrevious(PKM pk, EvolutionOrigin enc)
     {
         if (enc.Generation >= 8)
             return null;
-        if (enc.Version is GP or GE or GG or GO)
+        if (enc.Context is EntityContext.Gen7b)
             return EvolutionGroup7b.Instance;
         return EvolutionGroup7.Instance;
     }
@@ -221,14 +226,24 @@ public sealed class EvolutionGroupHOME : IEvolutionGroup
         PA8 => LA,
         PB8 => BDSP,
         PK9 => SV,
-        _ => throw new ArgumentOutOfRangeException(nameof(pk), pk, null),
+        _ => pk.Version switch // transferred to another game (Z-A)
+        {
+            GameVersion.PLA => LA,
+            GameVersion.SW or GameVersion.SH => SWSH,
+            GameVersion.BD or GameVersion.SP => BDSP,
+            GameVersion.SL or GameVersion.VL => SV,
+            _ => throw new ArgumentOutOfRangeException(nameof(pk), pk, null),
+        },
     };
 }
 
+/// <summary>
+/// Evolution environment for <see cref="EntityContext.Gen8"/>.
+/// </summary>
 public sealed class EvolutionEnvironment8 : IEvolutionEnvironment
 {
     private static readonly EvolutionTree Tree = EvolutionTree.Evolves8;
-    private static EvolutionRuleTweak Tweak => EvolutionRuleTweak.Default;
+    private static EvolutionRuleTweak Tweak => EvolutionRuleTweak.Level100;
 
     public bool TryDevolve<T>(T head, PKM pk, byte currentMaxLevel, byte levelMin, bool skipChecks, out EvoCriteria result) where T : ISpeciesForm
     {
@@ -251,6 +266,9 @@ public sealed class EvolutionEnvironment8 : IEvolutionEnvironment
     };
 }
 
+/// <summary>
+/// Evolution environment for <see cref="EntityContext.Gen8a"/>.
+/// </summary>
 public sealed class EvolutionEnvironment8a : IEvolutionEnvironment
 {
     private static readonly EvolutionTree Tree = EvolutionTree.Evolves8a;
@@ -263,10 +281,13 @@ public sealed class EvolutionEnvironment8a : IEvolutionEnvironment
         => Tree.Forward.TryEvolve(head, next, pk, currentMaxLevel, levelMin, skipChecks, Tweak, out result);
 }
 
+/// <summary>
+/// Evolution environment for <see cref="EntityContext.Gen8b"/>.
+/// </summary>
 public sealed class EvolutionEnvironment8b : IEvolutionEnvironment
 {
     private static readonly EvolutionTree Tree = EvolutionTree.Evolves8b;
-    private static EvolutionRuleTweak Tweak => EvolutionRuleTweak.Default;
+    private static EvolutionRuleTweak Tweak => EvolutionRuleTweak.Level100;
 
     public bool TryDevolve<T>(T head, PKM pk, byte currentMaxLevel, byte levelMin, bool skipChecks, out EvoCriteria result) where T : ISpeciesForm
         => Tree.Reverse.TryDevolve(head, pk, currentMaxLevel, levelMin, skipChecks, Tweak, out result);
@@ -275,6 +296,9 @@ public sealed class EvolutionEnvironment8b : IEvolutionEnvironment
         => Tree.Forward.TryEvolve(head, next, pk, currentMaxLevel, levelMin, skipChecks, Tweak, out result);
 }
 
+/// <summary>
+/// Evolution environment for <see cref="EntityContext.Gen9"/>.
+/// </summary>
 public sealed class EvolutionEnvironment9 : IEvolutionEnvironment
 {
     private static readonly EvolutionTree Tree = EvolutionTree.Evolves9;
@@ -286,3 +310,4 @@ public sealed class EvolutionEnvironment9 : IEvolutionEnvironment
     public bool TryEvolve<T>(T head, ISpeciesForm next, PKM pk, byte currentMaxLevel, byte levelMin, bool skipChecks, out EvoCriteria result) where T : ISpeciesForm
         => Tree.Forward.TryEvolve(head, next, pk, currentMaxLevel, levelMin, skipChecks, Tweak, out result);
 }
+

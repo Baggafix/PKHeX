@@ -101,8 +101,9 @@ public partial class MemoryAmie : Form
             CB_CTFeel.SelectedIndex = m.HandlingTrainerMemoryFeeling;
         }
 
-        var lOT = LegalityCheckStrings.L_XOT;
-        var lHT = LegalityCheckStrings.L_XHT;
+        var translation = GeneralLocalization.Get(Main.CurrentLanguage);
+        var lOT = translation.OriginalTrainer;
+        var lHT = translation.HandlingTrainer;
         CB_Handler.Items.Clear();
         CB_Handler.Items.Add($"{Entity.OriginalTrainerName} ({lOT})"); // OTNAME : OT
 
@@ -329,7 +330,7 @@ public partial class MemoryAmie : Form
     {
         if (sender is not ComboBox cb)
             return;
-        int index = Array.IndexOf(PrevCountries, cb);
+        int index = PrevCountries.IndexOf(cb);
         int val = WinFormsUtil.GetIndex(cb);
         if (val > 0)
         {
@@ -365,7 +366,7 @@ public partial class MemoryAmie : Form
         if (sender is not Label l)
             return;
         Label[] labels = [L_Geo0, L_Geo1, L_Geo2, L_Geo3, L_Geo4];
-        int index = Array.IndexOf(labels, l);
+        int index = labels.IndexOf(l);
         if (index < 0)
             return;
         PrevCountries[index].SelectedValue = 0;

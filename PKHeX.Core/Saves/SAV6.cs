@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace PKHeX.Core;
@@ -13,7 +12,7 @@ public abstract class SAV6 : SAV_BEEF, ITrainerStatRecord, ISaveBlock6Core, IReg
     protected internal override string ShortSummary => $"{OT} ({Version}) - {Played.LastSavedTime}";
     public override string Extension => string.Empty;
 
-    protected SAV6(byte[] data, [ConstantExpected] int biOffset) : base(data, biOffset) { }
+    protected SAV6(Memory<byte> data, [ConstantExpected] int biOffset) : base(data, biOffset) { }
     protected SAV6([ConstantExpected] int size, [ConstantExpected] int biOffset) : base(size, biOffset) { }
 
     // Configuration
@@ -70,7 +69,6 @@ public abstract class SAV6 : SAV_BEEF, ITrainerStatRecord, ISaveBlock6Core, IReg
 
     public override uint SecondsToStart { get => GameTime.SecondsToStart; set => GameTime.SecondsToStart = value; }
     public override uint SecondsToFame { get => GameTime.SecondsToFame; set => GameTime.SecondsToFame = value; }
-    public override IReadOnlyList<InventoryPouch> Inventory { get => Items.Inventory; set => Items.Inventory = value; }
 
     // Storage
     public override int GetPartyOffset(int slot) => Party + (SIZE_PARTY * slot);

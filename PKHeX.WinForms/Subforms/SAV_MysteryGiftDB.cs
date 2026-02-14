@@ -29,6 +29,11 @@ public partial class SAV_MysteryGiftDB : Form
     public SAV_MysteryGiftDB(PKMEditor tabs, SAVEditor sav)
     {
         InitializeComponent();
+
+        var settings = new TabPage { Text = "Settings", Name = "Tab_Settings" };
+        settings.Controls.Add(new PropertyGrid { Dock = DockStyle.Fill, SelectedObject = Main.Settings.EncounterDb });
+        TC_SearchSettings.Controls.Add(settings);
+
         WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
         UC_Builder = new EntityInstructionBuilder(() => tabs.PreparePKM())
         {
@@ -39,6 +44,8 @@ public partial class SAV_MysteryGiftDB : Form
         };
         Tab_Advanced.Controls.Add(UC_Builder);
         UC_Builder.SendToBack();
+        if (!Directory.Exists(DatabasePath))
+            Menu_OpenDB.Visible = false;
 
         SAV = sav.SAV;
         BoxView = sav;
@@ -77,7 +84,7 @@ public partial class SAV_MysteryGiftDB : Form
             slot.MouseEnter += (_, _) => ShowHoverTextForSlot(slot);
             slot.Enter += (_, _) =>
             {
-                var index = Array.IndexOf(PKXBOXES, slot);
+                var index = PKXBOXES.IndexOf(slot);
                 if (index < 0)
                     return;
                 index += (SCR_Box.Value * RES_MIN);
@@ -94,10 +101,6 @@ public partial class SAV_MysteryGiftDB : Form
         L_Viewed.Text = string.Empty; // invis for now
         L_Viewed.MouseEnter += (_, _) => hover.SetToolTip(L_Viewed, L_Viewed.Text);
 
-        var settings = new TabPage { Text = "Settings" };
-        settings.Controls.Add(new PropertyGrid { Dock = DockStyle.Fill, SelectedObject = Main.Settings.EncounterDb });
-        TC_SearchSettings.Controls.Add(settings);
-
         // Load Data
         B_Search.Enabled = false;
         L_Count.Text = "Loading...";
@@ -105,6 +108,19 @@ public partial class SAV_MysteryGiftDB : Form
 
         CB_Format.Items[0] = MsgAny;
         CenterToParent();
+
+        if (Application.IsDarkModeEnabled)
+        {
+            WinFormsUtil.InvertToolStripIcons(menuStrip1.Items);
+            WinFormsUtil.InvertToolStripIcons(mnu.Items);
+        }
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        foreach (var cb in TLP_Filters.Controls.OfType<ComboBox>())
+            cb.SelectedIndex = cb.SelectionLength = 0;
     }
 
     private readonly PictureBox[] PKXBOXES;
@@ -117,7 +133,7 @@ public partial class SAV_MysteryGiftDB : Form
     private const int RES_MAX = GridWidth * GridHeight;
     private readonly string Counter;
     private readonly string Viewed;
-    private const int MAXFORMAT = PKX.Generation;
+    private const int MAXFORMAT = Latest.Generation;
 
     private bool GetShiftedIndex(ref int index)
     {
@@ -133,7 +149,7 @@ public partial class SAV_MysteryGiftDB : Form
         int index = GetSenderIndex(sender);
         if (index < 0)
             return;
-        var temp = Results[index].ConvertToPKM(SAV);
+        var temp = Results[index].ConvertToPKM(SAV, EncounterCriteria.Unrestricted);
         var pk = EntityConverter.ConvertToType(temp, SAV.PKMType, out var c);
         if (pk is null)
         {
@@ -141,6 +157,7 @@ public partial class SAV_MysteryGiftDB : Form
             return;
         }
         SAV.AdaptToSaveFile(pk);
+        pk.RefreshChecksum();
         PKME_Tabs.PopulateFields(pk, false);
         slotSelected = index;
         slotColor = SpriteUtil.Spriter.View;
@@ -174,8 +191,9 @@ public partial class SAV_MysteryGiftDB : Form
 
     private int GetSenderIndex(object sender)
     {
-        var pb = WinFormsUtil.GetUnderlyingControl<PictureBox>(sender);
-        int index = Array.IndexOf(PKXBOXES, pb);
+        if (!WinFormsUtil.TryGetUnderlying<PictureBox>(sender, out var pb))
+            ArgumentNullException.ThrowIfNull(pb);
+        int index = PKXBOXES.IndexOf(pb);
         if (index >= RES_MAX)
         {
             System.Media.SystemSounds.Exclamation.Play();
@@ -198,17 +216,17 @@ public partial class SAV_MysteryGiftDB : Form
 
         var comboAny = new ComboItem(MsgAny, -1);
 
-        var species = new List<ComboItem>(GameInfo.SpeciesDataSource);
-        species.RemoveAt(0);
-        var filteredSpecies = species.Where(z => RawDB.Any(mg => mg.Species == z.Value)).ToList();
-        filteredSpecies.Insert(0, comboAny);
-        CB_Species.DataSource = filteredSpecies;
+        var source = GameInfo.FilteredSources;
+        var species = new List<ComboItem>(source.Species);
+        species.RemoveAll(z => RawDB.All(mg => mg.Species != z.Value));
+        species.Insert(0, comboAny);
+        CB_Species.DataSource = species;
 
-        var items = new List<ComboItem>(GameInfo.ItemDataSource);
+        var items = new List<ComboItem>(source.Items);
         items.Insert(0, comboAny); CB_HeldItem.DataSource = items;
 
         // Set the Move ComboBoxes too.
-        var moves = new List<ComboItem>(GameInfo.MoveDataSource);
+        var moves = new List<ComboItem>(source.Moves);
         moves.RemoveAt(0); moves.Insert(0, comboAny);
         {
             ComboBox[] arr = [CB_Move1, CB_Move2, CB_Move3, CB_Move4];
@@ -220,7 +238,6 @@ public partial class SAV_MysteryGiftDB : Form
         }
 
         // Trigger a Reset
-        ResetFilters(this, EventArgs.Empty);
         B_Search.Enabled = true;
     }
 
@@ -289,7 +306,7 @@ public partial class SAV_MysteryGiftDB : Form
 
         foreach (var gift in Results.OfType<DataMysteryGift>()) // WC3 have no data
         {
-            var fileName = Util.CleanFileName(gift.FileName);
+            var fileName = PathUtil.CleanFileName(gift.FileName);
             var path = Path.Combine(folder, fileName);
             var data = gift.Write();
             File.WriteAllBytes(path, data);
@@ -451,7 +468,7 @@ public partial class SAV_MysteryGiftDB : Form
 
     private void ShowHoverTextForSlot(PictureBox pb)
     {
-        int index = Array.IndexOf(PKXBOXES, pb);
+        int index = PKXBOXES.IndexOf(pb);
         if (!GetShiftedIndex(ref index))
             return;
 

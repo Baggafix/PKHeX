@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -17,7 +16,7 @@ public sealed class SAV4HGSS : SAV4, IBoxDetailName, IBoxDetailWallpaper
         Dex = new Zukan4(this, GeneralBuffer[PokeDex..]);
     }
 
-    public SAV4HGSS(byte[] data) : base(data, GeneralSize, StorageSize, GeneralSize + GeneralGap)
+    public SAV4HGSS(Memory<byte> data) : base(data, GeneralSize, StorageSize, GeneralSize + GeneralGap)
     {
         Initialize();
         Mystery = new MysteryBlock4HGSS(this, GeneralBuffer.Slice(OffsetMystery, MysteryBlock4HGSS.Size));
@@ -25,7 +24,7 @@ public sealed class SAV4HGSS : SAV4, IBoxDetailName, IBoxDetailWallpaper
     }
 
     public override Zukan4 Dex { get; }
-    protected override SAV4 CloneInternal4() => State.Exportable ? new SAV4HGSS((byte[])Data.Clone()) : new SAV4HGSS();
+    protected override SAV4 CloneInternal4() => State.Exportable ? new SAV4HGSS(Data.ToArray()) : new SAV4HGSS();
 
     public override GameVersion Version { get => GameVersion.HGSS; set { } }
     public override PersonalTable4 Personal => PersonalTable.HGSS;
@@ -39,12 +38,12 @@ public sealed class SAV4HGSS : SAV4, IBoxDetailName, IBoxDetailWallpaper
 
     protected override BlockInfo4[] ExtraBlocks =>
     [
-        new BlockInfo4(0, 0x23000, 0x2AC0), // Hall of Fame
-        new BlockInfo4(1, 0x26000, 0x0BB0), // Battle Hall
-        new BlockInfo4(2, 0x27000, 0x1D60), // Battle Video (My Video)
-        new BlockInfo4(3, 0x29000, 0x1D60), // Battle Video (Other Videos 1)
-        new BlockInfo4(4, 0x2B000, 0x1D60), // Battle Video (Other Videos 2)
-        new BlockInfo4(5, 0x2D000, 0x1D60), // Battle Video (Other Videos 3)
+        new(0, 0x23000, 0x2AC0), // Hall of Fame
+        new(1, 0x26000, 0x0BB0), // Battle Hall
+        new(2, 0x27000, 0x1D60), // Battle Video (My Video)
+        new(3, 0x29000, 0x1D60), // Battle Video (Other Videos 1)
+        new(4, 0x2B000, 0x1D60), // Battle Video (Other Videos 2)
+        new(5, 0x2D000, 0x1D60), // Battle Video (Other Videos 3)
     ];
 
     private void Initialize()
@@ -53,7 +52,7 @@ public sealed class SAV4HGSS : SAV4, IBoxDetailName, IBoxDetailWallpaper
         GetSAVOffsets();
     }
 
-    protected override byte[] GetFinalData()
+    protected override Memory<byte> GetFinalData()
     {
         // Make sure all boxes are copied when saved only once in-game.
         // This results in the game "saving a lot of data", but ensures the boxdata struct does not corrupt in-game on single save.
@@ -77,6 +76,7 @@ public sealed class SAV4HGSS : SAV4, IBoxDetailName, IBoxDetailWallpaper
         FashionCase = 0x3F64;
         OFS_Record = 0x4B3C;
         OFS_Chatter = 0x4E74;
+        OFS_Groups = 0x440C;
         Geonet = 0x8D44;
         WondercardFlags = 0x9D3C;
         Seal = 0x4E20;
@@ -177,26 +177,14 @@ public sealed class SAV4HGSS : SAV4, IBoxDetailName, IBoxDetailWallpaper
     }
     #endregion
 
-    public override IReadOnlyList<InventoryPouch> Inventory
+    protected override void SetPKM(PKM pk, bool isParty = false)
     {
-        get
-        {
-            var info = ItemStorage4HGSS.Instance;
-            InventoryPouch[] pouch =
-            [
-                new InventoryPouch4(InventoryType.Items, info, 999, 0x644), // 0x644-0x8D7 (0x8CB)
-                new InventoryPouch4(InventoryType.KeyItems, info, 1, 0x8D8), // 0x8D8-0x99F (0x979)
-                new InventoryPouch4(InventoryType.TMHMs, info, 99, 0x9A0), // 0x9A0-0xB33 (0xB2F)
-                new InventoryPouch4(InventoryType.MailItems, info, 999, 0xB34), // 0xB34-0xB63 (0xB63)
-                new InventoryPouch4(InventoryType.Medicine, info, 999, 0xB64), // 0xB64-0xC03 (0xBFB)
-                new InventoryPouch4(InventoryType.Berries, info, 999, 0xC04), // 0xC04-0xD03
-                new InventoryPouch4(InventoryType.Balls, info, 999, 0xD04), // 0xD04-0xD63
-                new InventoryPouch4(InventoryType.BattleItems, info, 999, 0xD64), // 0xD64-0xD97
-            ];
-            return pouch.LoadAll(General);
-        }
-        set => value.SaveAll(General);
+        base.SetPKM(pk, isParty);
+        if (!isParty)
+            ((PK4)pk).WalkingMood = 0;
     }
+
+    public override PlayerBag4HGSS Inventory => new(this);
 
     public override int M { get => ReadUInt16LittleEndian(General[0x1234..]); set => WriteUInt16LittleEndian(General[0x1234..], (ushort)value); }
     public override int X { get => ReadUInt16LittleEndian(General[0x123C..]); set => WriteUInt16LittleEndian(General[0x123C..], (ushort)(X2 = value)); }
@@ -327,7 +315,9 @@ public sealed class SAV4HGSS : SAV4, IBoxDetailName, IBoxDetailWallpaper
     // Swarm
     public override uint SwarmSeed { get => ReadUInt32LittleEndian(General[0x68A8..]); set => WriteUInt32LittleEndian(General[0x68A8..], value); }
     public override uint SwarmMaxCountModulo => 20;
+
     public override int BP { get => ReadUInt16LittleEndian(General[0x5BB8..]); set => WriteUInt16LittleEndian(General[0x5BB8..], (ushort)value); }
+    public override uint BattleTowerSeed { get => ReadUInt32LittleEndian(General[0x5BBC..]); set => WriteUInt32LittleEndian(General[0x5BBC..], value); }
 
     // Roamers
     public Roamer4 RoamerRaikou => GetRoamer(0);

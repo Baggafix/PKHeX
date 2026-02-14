@@ -318,7 +318,7 @@ internal static class Encounters8
         // Strong 1
 
         new()     { Species = 079, Level = 12, Location = 016, ScriptedNoMarks = true, Form = 01, Shiny = Never }, // Slowpoke-1 at Wedgehurst Station
-        new()     { Species = 321, Level = 80, Location = 186, Weather = All_IoA }, // Wailord in the Workout Sea
+        new()     { Species = 321, Level = 80, Location = 186, Weather = Normal | Overcast | Raining | Thunderstorm | Intense_Sun | Heavy_Fog }, // Wailord in the Workout Sea
 
         new()     { Species = 748, Level = 20, Location = 164, Weather = Normal | Heavy_Fog }, // Toxapex in the Fields of Honor
         new()     { Species = 099, Level = 20, Location = 164, Weather = Normal | Overcast | Stormy | Intense_Sun }, // Kingler in the Fields of Honor
@@ -758,7 +758,7 @@ internal static class Encounters8
     ];
 
     private const string tradeSWSH = "tradeswsh";
-    private static readonly string[][] TradeNames = Util.GetLanguageStrings10(tradeSWSH);
+    private static readonly string[][] TradeNames = GetLanguageStrings(tradeSWSH, 10);
     private static readonly string[] TradeOT_R1 = [string.Empty, "チホコ", "Regina", "Régiona", "Regionalia", "Regine", string.Empty, "Tatiana", "지민", "易蒂", "易蒂"];
     private static readonly IndividualValueSet TradeIVs = new(15, 15, 15, 15, 15, 15);
 

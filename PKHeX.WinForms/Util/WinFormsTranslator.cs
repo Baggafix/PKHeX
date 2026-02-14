@@ -69,6 +69,16 @@ public static class WinFormsTranslator
             context.GetTranslatedText(c.Name, c.Text);
     }
 
+    public static void TranslateControls(string formName, IEnumerable<ToolStripMenuItem> controls, string baseLanguage)
+    {
+        var context = GetContext(baseLanguage);
+        foreach (var c in controls)
+        {
+            if (c.Name is { } name)
+                context.GetTranslatedText($"{formName}.{name}", c.Text);
+        }
+    }
+
     private static string GetSaneFormName(string formName)
     {
         // Strip out generic form names
@@ -106,6 +116,13 @@ public static class WinFormsTranslator
             if (!ReferenceEquals(current, updated))
                 t.Text = updated;
         }
+        else if (c is DataGridViewColumn col)
+        {
+            var current = col.HeaderText;
+            var updated = context.GetTranslatedText($"{formname}.DGV_{col.Name}", current);
+            if (!ReferenceEquals(current, updated))
+                col.HeaderText = updated;
+        }
     }
 
     private static ReadOnlySpan<char> GetTranslationFile(ReadOnlySpan<char> lang)
@@ -120,7 +137,7 @@ public static class WinFormsTranslator
         }
 
         var txt = (string?)Properties.Resources.ResourceManager.GetObject(file);
-        return txt ?? "";
+        return txt ?? string.Empty;
     }
 
     private static IEnumerable<object> GetTranslatableControls(Control f)
@@ -144,13 +161,69 @@ public static class WinFormsTranslator
                             yield return obj;
                     }
 
+                    if (Application.IsDarkModeEnabled) // NET10
+                        ReformatDark(z);
+
                     if (z is ListControl or TextBoxBase or LinkLabel or NumericUpDown or ContainerControl)
                         break; // undesirable to modify, ignore
+
+                    if (z is DataGridView { ColumnHeadersVisible: true } dgv)
+                    {
+                        foreach (DataGridViewColumn col in dgv.Columns)
+                        {
+                            if (col.Visible && !string.IsNullOrWhiteSpace(col.HeaderText))
+                                yield return col;
+                        }
+                    }
 
                     if (!string.IsNullOrWhiteSpace(z.Text))
                         yield return z;
                     break;
             }
+        }
+    }
+
+    private static void ReformatDark(Control z)
+    {
+        if (z is TabControl tc)
+        {
+            foreach (TabPage tab in tc.TabPages)
+                tab.UseVisualStyleBackColor = false;
+        }
+        else if (z is DataGridView dg)
+        {
+            dg.EnableHeadersVisualStyles = false;
+            dg.BorderStyle = BorderStyle.None;
+        }
+        else if (z is ComboBox cb)
+        {
+            cb.FlatStyle = FlatStyle.Popup;
+        }
+        else if (z is ListBox lb)
+        {
+            lb.BorderStyle = BorderStyle.None;
+        }
+        else if (z is TextBoxBase tb)
+        {
+            tb.BorderStyle = BorderStyle.FixedSingle;
+        }
+        else if (z is NumericUpDown nud)
+        {
+            nud.BorderStyle = BorderStyle.FixedSingle;
+        }
+        else if (z is GroupBox gb)
+        {
+            gb.FlatStyle = FlatStyle.Popup;
+        }
+        else if (z is RichTextBox rtb)
+        {
+            rtb.BorderStyle = BorderStyle.None;
+        }
+        else if (z is ButtonBase b)
+        {
+            b.FlatStyle = FlatStyle.Popup;
+            if (b.Image is System.Drawing.Bitmap bmp)
+                b.Image = WinFormsUtil.BlackToWhite(bmp);
         }
     }
 
@@ -162,7 +235,7 @@ public static class WinFormsTranslator
                 yield return childOfT;
 
             if (!child.HasChildren) continue;
-            foreach (var descendant in GetChildrenOfType<T>(child))
+            foreach (var descendant in child.GetChildrenOfType<T>())
                 yield return descendant;
         }
     }
