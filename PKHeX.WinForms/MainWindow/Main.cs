@@ -1381,6 +1381,75 @@ public partial class Main : Form
         return elt;
     }
 
+    private XmlElement FromGen5(XmlDocument doc, PersonalInfo5B2W2 pi, XmlElement xe)
+    {
+
+        GameStrings gs = GameInfo.GetStrings("fr");
+
+        // stats
+        xe.AppendChild(CreateElt(doc, "HP", pi.HP.ToString()));
+        xe.AppendChild(CreateElt(doc, "Att", pi.ATK.ToString()));
+        xe.AppendChild(CreateElt(doc, "Def", pi.DEF.ToString()));
+        xe.AppendChild(CreateElt(doc, "SpeAtt", pi.SPA.ToString()));
+        xe.AppendChild(CreateElt(doc, "SpeDef", pi.SPD.ToString()));
+        xe.AppendChild(CreateElt(doc, "Speed", pi.SPE.ToString()));
+        // Types
+        xe.AppendChild(CreateElt(doc, "Type1", pi.Type1.ToString(), "nameFR", gs.Types[pi.Type1]));
+        xe.AppendChild(CreateElt(doc, "Type2", pi.Type2.ToString(), "nameFR", gs.Types[pi.Type2]));
+        // catch rate
+        xe.AppendChild(CreateElt(doc, "CatchRate", pi.CatchRate.ToString()));
+        // ev donnés
+        xe.AppendChild(CreateElt(doc, "EvHP", pi.EV_HP.ToString()));
+        xe.AppendChild(CreateElt(doc, "EvAtt", pi.EV_ATK.ToString()));
+        xe.AppendChild(CreateElt(doc, "EvDef", pi.EV_DEF.ToString()));
+        xe.AppendChild(CreateElt(doc, "EvSpeAtt", pi.EV_SPA.ToString()));
+        xe.AppendChild(CreateElt(doc, "EvSpeDef", pi.EV_SPD.ToString()));
+        xe.AppendChild(CreateElt(doc, "EvSpeed", pi.EV_SPE.ToString()));
+        // items
+        if (pi.Item1 <= 638)
+            xe.AppendChild(CreateElt(doc, "Item1", pi.Item1.ToString(), "nameFR", gs.Item[pi.Item1]));
+        if (pi.Item2 <= 638)
+            xe.AppendChild(CreateElt(doc, "Item2", pi.Item2.ToString(), "nameFR", gs.Item[pi.Item2]));
+        if (pi.Item3 <= 638)
+            xe.AppendChild(CreateElt(doc, "Item3", pi.Item3.ToString(), "nameFR", gs.Item[pi.Item3]));
+        // Misc
+        xe.AppendChild(CreateElt(doc, "GenderRate", pi.Gender.ToString()));
+        xe.AppendChild(CreateElt(doc, "Hatch", pi.HatchCycles.ToString()));
+        xe.AppendChild(CreateElt(doc, "Happiness", pi.BaseFriendship.ToString()));
+        xe.AppendChild(CreateElt(doc, "GrowthRate", pi.EXPGrowth.ToString()));
+        // Egg type
+        xe.AppendChild(CreateElt(doc, "Egg1", pi.EggGroup1.ToString()));
+        xe.AppendChild(CreateElt(doc, "Egg2", pi.EggGroup2.ToString()));
+        // Abilities
+        // Check if ability is available in Gen5
+        if (pi.Ability1 <= 164)
+            xe.AppendChild(CreateElt(doc, "Ability1", pi.Ability1.ToString(), "nameFR", gs.Ability[pi.Ability1]));
+        else
+            xe.AppendChild(CreateElt(doc, "Ability1", "0", "nameFR", gs.Ability[pi.Ability1] + " - Talent incompatible"));
+        if (pi.Ability2 <= 164)
+            xe.AppendChild(CreateElt(doc, "Ability2", pi.Ability2.ToString(), "nameFR", gs.Ability[pi.Ability2]));
+        else
+            xe.AppendChild(CreateElt(doc, "Ability2", "0", "nameFR", gs.Ability[pi.Ability2] + " - Talent incompatible"));
+        if (pi.AbilityH <= 164)
+            xe.AppendChild(CreateElt(doc, "Ability3", pi.AbilityH.ToString(), "nameFR", gs.Ability[pi.AbilityH]));
+        else
+            xe.AppendChild(CreateElt(doc, "Ability3", "0", "nameFR", gs.Ability[pi.AbilityH] + " - Talent incompatible"));
+        // Flee rate
+        xe.AppendChild(CreateElt(doc, "FleeRate", pi.EscapeRate.ToString()));
+        // Formes (stat and sprite index)
+        // Recalc formes index depending on 5G formes
+        xe.AppendChild(CreateElt(doc, "FormStatsIndex", pi.FormStatsIndex.ToString()));
+        xe.AppendChild(CreateElt(doc, "FormSpriteIndex", pi.FormSprite.ToString()));
+        xe.AppendChild(CreateElt(doc, "FormCount", pi.FormCount.ToString()));
+        // Misc 2
+        xe.AppendChild(CreateElt(doc, "Color", pi.Color.ToString()));
+        xe.AppendChild(CreateElt(doc, "BaseExp", pi.BaseEXP.ToString()));
+        xe.AppendChild(CreateElt(doc, "Height", pi.Height.ToString()));
+        xe.AppendChild(CreateElt(doc, "Weight", pi.Weight.ToString()));
+
+        return xe;
+    }
+
     private XmlElement FromGen6(XmlDocument doc, PersonalInfo6AO pi, XmlElement xe)
     {
         GameStrings gs = GameInfo.GetStrings("fr");
@@ -1653,16 +1722,35 @@ public partial class Main : Form
         return xe;
     }
 
-    private XmlElement FromGen9(XmlDocument doc, PersonalInfo9SV pi, XmlElement xe)
+    private XmlElement FromGen9(XmlDocument doc, PersonalInfo9ZA pi, XmlElement xe, bool isGiga)
     {
         GameStrings gs = GameInfo.GetStrings("fr");
 
         // stats
-        xe.AppendChild(CreateElt(doc, "HP", pi.HP.ToString()));
+        if (!isGiga)
+        {
+            xe.AppendChild(CreateElt(doc, "HP", pi.HP.ToString()));
+            xe.AppendChild(CreateElt(doc, "Def", pi.DEF.ToString()));
+            xe.AppendChild(CreateElt(doc, "SpeDef", pi.SPD.ToString()));
+        }
+        else
+        {
+            if (pi.HP <= 170) // edited hp goes up to 255 max then keep def and spe def the same
+            {
+                xe.AppendChild(CreateElt(doc, "HP", Math.Floor(pi.HP * 1.5).ToString()));
+                xe.AppendChild(CreateElt(doc, "Def", pi.DEF.ToString()));
+                xe.AppendChild(CreateElt(doc, "SpeDef", pi.SPD.ToString()));
+            }
+            else // edited hp goes beyond 255 then report the diff to def ans spe def to increase bulk
+            {
+                double diff = Math.Floor(pi.HP * 1.5) - 255;
+                int statPlus = Convert.ToInt32(Math.Floor(diff / 2) % 2 == 0 ? Math.Floor(diff / 2) : Math.Floor(diff / 2) + 1);
+                xe.AppendChild(CreateElt(doc, "Def", (pi.DEF + statPlus) > 255 ? "255" : (pi.DEF + statPlus).ToString()));
+                xe.AppendChild(CreateElt(doc, "SpeDef", (pi.SPD + statPlus) > 255 ? "255" : (pi.SPD + statPlus).ToString()));
+            }
+        }
         xe.AppendChild(CreateElt(doc, "Att", pi.ATK.ToString()));
-        xe.AppendChild(CreateElt(doc, "Def", pi.DEF.ToString()));
         xe.AppendChild(CreateElt(doc, "SpeAtt", pi.SPA.ToString()));
-        xe.AppendChild(CreateElt(doc, "SpeDef", pi.SPD.ToString()));
         xe.AppendChild(CreateElt(doc, "Speed", pi.SPE.ToString()));
         // Types
         xe.AppendChild(CreateElt(doc, "Type1", pi.Type1.ToString(), "nameFR", gs.Types[pi.Type1]));
@@ -1731,6 +1819,7 @@ public partial class Main : Form
         PersonalTable8SWSH swsh = PersonalTable.SWSH;
         PersonalTable8LA la = PersonalTable.LA;
         PersonalTable9SV sv = PersonalTable.SV;
+        PersonalTable9ZA za = PersonalTable.ZA;
 
         /*
  * GAME VERSION
@@ -1779,8 +1868,8 @@ internal const int MaxGameID_5 = 23; // B2
         }
         else if (pokeindex <= 1025)
         {
-            PersonalInfo9SV pi9 = sv.GetFormEntry(pokeindex, 99);
-            xe = FromGen9(doc, pi9, xe);
+            PersonalInfo9ZA pi9 = za.GetFormEntry(pokeindex, 99);
+            xe = FromGen9(doc, pi9, xe, false);
         }
 
         //if (pi6.HasForms)
@@ -1796,81 +1885,152 @@ internal const int MaxGameID_5 = 23; // B2
         return xe;
     }
 
-    private XmlElement CreateGen5FormNode(XmlDocument doc, ushort pokeindex)
+    private XmlElement? CreateGigantamaxFormNode(XmlDocument doc, ushort pokeindex)
     {
-        PersonalTable5B2W2 bw2 = PersonalTable.B2W2;
+        PersonalTable5B2W2 bw2 = PersonalTable.B2W2; // bw2
         PersonalTable6AO ao = PersonalTable.AO;
         PersonalTable7 usum = PersonalTable.USUM;
         PersonalTable8SWSH swsh = PersonalTable.SWSH;
         PersonalTable8LA la = PersonalTable.LA;
         PersonalTable9SV sv = PersonalTable.SV;
+        PersonalTable9ZA za = PersonalTable.ZA;
 
+        XmlElement xe = doc.CreateElement("Pokemon");
+        xe.AppendChild(CreateElt(doc, "NoDex", pokeindex.ToString())); // 2 = en
+        xe.AppendChild(CreateElt(doc, "Name_En", SpeciesName.GetSpeciesName(pokeindex, 2))); // 2 = en
+        xe.AppendChild(CreateElt(doc, "Name_Fr", SpeciesName.GetSpeciesName(pokeindex, 3))); // 3 = fr
+
+
+
+        if (pokeindex <= 649)
+        {
+            PersonalInfo5B2W2 pi5 = bw2.GetFormEntry(pokeindex, 99);
+            xe = FromGen5(doc, pi5, xe);
+        }
+        if (pokeindex <= 721)
+        {
+            PersonalInfo6AO pi6 = ao.GetFormEntry(pokeindex, 99);
+            xe = FromGen6(doc, pi6, xe);
+        }
+        else if (pokeindex <= 809)
+        {
+            PersonalInfo7 pi7 = usum.GetFormEntry(pokeindex, 99);
+            xe = FromGen7(doc, pi7, xe);
+        }
+        else if (pokeindex <= 898)
+        {
+            PersonalInfo8SWSH pi8swsh = swsh.GetFormEntry(pokeindex, 99);
+            xe = FromGen8SWSH(doc, pi8swsh, xe);
+        }
+        else if (pokeindex <= 905)
+        {
+            PersonalInfo8LA pi8la = la.GetFormEntry(pokeindex, 99);
+            xe = FromGen8LA(doc, pi8la, xe);
+        }
+        else if (pokeindex <= 1025)
+        {
+            PersonalInfo9ZA pi9 = za.GetFormEntry(pokeindex, 99);
+            xe = FromGen9(doc, pi9, xe, false);
+        }
+        return xe;
+    }
+
+    private XmlElement CreateGen5FormNode(XmlDocument doc, ushort pokeindex)
+    {
+        PersonalTable5B2W2 bw2 = PersonalTable.B2W2; // bw2
+        //PersonalTable6XY xy = PersonalTable.XY; // No need for XY because forms are in ORAS too
+        PersonalTable6AO ao = PersonalTable.AO; // alpha omega
+        PersonalTable7 usum = PersonalTable.USUM; // ultra sun moon
+        PersonalTable8SWSH swsh = PersonalTable.SWSH; // sword shield
+        PersonalTable8LA la = PersonalTable.LA; // legend arceus
+        PersonalTable9SV sv = PersonalTable.SV; // scarlet violet
+        PersonalTable9ZA za = PersonalTable.ZA; // legend z-a
 
         // Filter only new forms for pokemons from g1 to 5
         //if (pokeindex <= 649)
         //{
         PersonalInfo5B2W2 pi5 = bw2.GetFormEntry(pokeindex, 99);
-        PersonalInfo9SV pi9bis = sv.GetFormEntry(pokeindex, 99);
-        if (pi9bis.HasForms)
+        PersonalInfo9ZA pi9bis = za.GetFormEntry(pokeindex, 99);
+
+        if (pi9bis.HasForms || Gigantamax.CanToggle(pokeindex))
         {
-            byte i = 1; // form 0 = 'normal' form
+            // Récupérer les noms de formes
+            string[] genderForms = ["", "F", ""];
+            GameStrings gsEn = GameInfo.GetStrings("en");
+            GameStrings gsFr = GameInfo.GetStrings("fr");
+            string[] formNamesEn = FormConverter.GetFormList(pokeindex, gsEn.types, gsEn.forms, genderForms, EntityContext.Gen9a);
+            string[] formNamesFr = FormConverter.GetFormList(pokeindex, gsFr.types, gsFr.forms, genderForms, EntityContext.Gen9a);
+
+            byte i = 1;
             if (pokeindex <= 649 && pi5.HasForms && pi5.FormCount < pi9bis.FormCount)
                 i = Convert.ToByte(pi9bis.FormCount - pi5.FormCount + 1);
-
+            byte alreadyKnownForms = i;
             XmlElement xe = doc.CreateElement("Pokemon");
             xe.AppendChild(CreateElt(doc, "NoDex", pokeindex.ToString())); // 2 = en
             xe.AppendChild(CreateElt(doc, "Name_En", SpeciesName.GetSpeciesName(pokeindex, 2))); // 2 = en
             xe.AppendChild(CreateElt(doc, "Name_Fr", SpeciesName.GetSpeciesName(pokeindex, 3))); // 3 = fr
-            while (i <= pi9bis.FormCount)
+
+            while (i <= (pi9bis.FormCount - alreadyKnownForms)) // remove already store form of gen5-
             {
                 XmlElement fxe = doc.CreateElement("Form");
                 fxe.AppendChild(CreateElt(doc, "NoForm", i.ToString()));
-                PersonalInfo9SV pi9f = sv.GetFormEntry(pokeindex, i);
-                fxe = FromGen9(doc, pi9f, fxe);
+
+                // Ajouter les noms de forme si disponibles
+                if (i < formNamesEn.Length)
+                    fxe.AppendChild(CreateElt(doc, "FormName_En", formNamesEn[i]));
+                if (i < formNamesFr.Length)
+                    fxe.AppendChild(CreateElt(doc, "FormName_Fr", formNamesFr[i]));
+
+                PersonalInfo9ZA pi9f = za.GetFormEntry(pokeindex, i);
+                fxe = FromGen9(doc, pi9f, fxe, false);
                 xe.AppendChild(fxe);
                 ++i;
+            }
+            // no need to loop, check from source species if it has gigantamax
+            if (Gigantamax.CanToggle(pokeindex, 0))
+            {
+                if (pokeindex == 892) // urshifu has 2 gigantamax forms
+                {
+                    // loop only for urshifu since it has 2 gigantamax forms
+                    byte j = 0; // urshifu has no normal form
+                    byte k = i;
+                    while (j < pi9bis.FormCount)
+                    {
+                        XmlElement fxe = doc.CreateElement("Form");
+                        fxe.AppendChild(CreateElt(doc, "NoForm", k.ToString()));
+
+                        // Ajouter les noms de forme si disponibles
+                        if (j < formNamesEn.Length)
+                            fxe.AppendChild(CreateElt(doc, "FormName_En", formNamesEn[j].ToLower() == "normal" ? "Gigantamax" : formNamesEn[j] + " Gigantamax"));
+                        if (j < formNamesFr.Length)
+                            fxe.AppendChild(CreateElt(doc, "FormName_Fr", formNamesFr[j].ToLower() == "normal" ? "Gigantamax" : formNamesFr[j] + " Gigantamax"));
+
+                        PersonalInfo9ZA pi9f = za.GetFormEntry(pokeindex, j);
+                        fxe = FromGen9(doc, pi9f, fxe, true);
+                        xe.AppendChild(fxe);
+                        ++k;
+                        ++j;
+                    }
+                }
+                else
+                {
+                    XmlElement fxe = doc.CreateElement("Form");
+                    fxe.AppendChild(CreateElt(doc, "NoForm", i.ToString()));
+
+                    // Ajouter les noms de forme si disponibles
+                    fxe.AppendChild(CreateElt(doc, "FormName_En", "Gigantamax"));
+                    fxe.AppendChild(CreateElt(doc, "FormName_Fr", "Gigantamax"));
+
+                    PersonalInfo9ZA pi9f = za.GetFormEntry(pokeindex, 0);
+                    fxe = FromGen9(doc, pi9f, fxe, true);
+                    xe.AppendChild(fxe);
+                    ++i;
+                }
             }
             return xe;
         }
         else
             return null;
-
-        //}
-        //else if (pokeindex <= 721)
-        //{
-        //    PersonalInfo6AO pi6 = ao.GetFormEntry(pokeindex, 99);
-        //    xe = FromGen6(doc, pi6, xe);
-        //}
-        //else if (pokeindex <= 809)
-        //{
-        //    PersonalInfo7 pi7 = usum.GetFormEntry(pokeindex, 99);
-        //    xe = FromGen7(doc, pi7, xe);
-        //}
-        //else if (pokeindex <= 898)
-        //{
-        //    PersonalInfo8SWSH pi8swsh = swsh.GetFormEntry(pokeindex, 99);
-        //    xe = FromGen8SWSH(doc, pi8swsh, xe);
-        //}
-        //else if (pokeindex <= 905)
-        //{
-        //    PersonalInfo8LA pi8la = la.GetFormEntry(pokeindex, 99);
-        //    xe = FromGen8LA(doc, pi8la, xe);
-        //}
-        //else if (pokeindex <= 1017)
-        //{
-        //    PersonalInfo9SV pi9 = sv.GetFormEntry(pokeindex, 99);
-        //    xe = FromGen9(doc, pi9, xe);
-        //}
-
-        //if (pi6.HasForms)
-        //{
-
-        //}
-        //else
-        //{
-
-        //}
-        return null;
     }
 
     private void exportDexToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1920,6 +2080,8 @@ internal const int MaxGameID_5 = 23; // B2
                 fdoc.DocumentElement.AppendChild(fxe);
             /*
              * TO DO : 
+             * create poke.csv
+             * add gigantamax formes
              * Translate to 5G
              * tm
              * move tutors
