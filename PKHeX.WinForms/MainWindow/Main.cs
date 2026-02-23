@@ -41,6 +41,9 @@ public partial class Main : Form
         FormInitializeSecond();
     }
 
+    public string _csv = "";
+    public string _formesCsv = "";
+
     #region Important Variables
     public static string CurrentLanguage
     {
@@ -1952,6 +1955,9 @@ internal const int MaxGameID_5 = 23; // B2
         PersonalInfo5B2W2 pi5 = bw2.GetFormEntry(pokeindex, 99);
         PersonalInfo9ZA pi9bis = za.GetFormEntry(pokeindex, 99);
 
+        if (pokeindex <= 649 && pi5.HasForms && pi5.FormCount == pi9bis.FormCount) // if gen 5 forms are already known then skip
+            return null;
+
         if (pi9bis.HasForms || Gigantamax.CanToggle(pokeindex))
         {
             // Récupérer les noms de formes
@@ -1962,18 +1968,25 @@ internal const int MaxGameID_5 = 23; // B2
             string[] formNamesFr = FormConverter.GetFormList(pokeindex, gsFr.types, gsFr.forms, genderForms, EntityContext.Gen9a);
 
             byte i = 1;
-            if (pokeindex <= 649 && pi5.HasForms && pi5.FormCount < pi9bis.FormCount)
-                i = Convert.ToByte(pi9bis.FormCount - pi5.FormCount + 1);
-            byte alreadyKnownForms = i;
+            byte alreadyKnownForms = i; 
+            bool hasAlreadyKnownForms = false;
+            if (pokeindex <= 649 && pi5.HasForms && pi5.FormCount < pi9bis.FormCount) // if gen 5 forms are known but not all gen 9 forms then start from the next form after gen 5 ones
+            {
+                i = Convert.ToByte(pi5.FormCount);
+                alreadyKnownForms = Convert.ToByte(pi5.FormCount);
+                hasAlreadyKnownForms = true;
+            }
+            //i = Convert.ToByte(pi9bis.FormCount - pi5.FormCount + 1);
             XmlElement xe = doc.CreateElement("Pokemon");
             xe.AppendChild(CreateElt(doc, "NoDex", pokeindex.ToString())); // 2 = en
             xe.AppendChild(CreateElt(doc, "Name_En", SpeciesName.GetSpeciesName(pokeindex, 2))); // 2 = en
             xe.AppendChild(CreateElt(doc, "Name_Fr", SpeciesName.GetSpeciesName(pokeindex, 3))); // 3 = fr
 
-            while (i <= (pi9bis.FormCount - alreadyKnownForms)) // remove already store form of gen5-
+            byte l = 1;
+            while (i < formNamesEn.Length) // remove already store form of gen5-
             {
                 XmlElement fxe = doc.CreateElement("Form");
-                fxe.AppendChild(CreateElt(doc, "NoForm", i.ToString()));
+                fxe.AppendChild(CreateElt(doc, "NoForm", l.ToString()));
 
                 // Ajouter les noms de forme si disponibles
                 if (i < formNamesEn.Length)
@@ -1985,6 +1998,7 @@ internal const int MaxGameID_5 = 23; // B2
                 fxe = FromGen9(doc, pi9f, fxe, false);
                 xe.AppendChild(fxe);
                 ++i;
+                ++l;
             }
             // no need to loop, check from source species if it has gigantamax
             if (Gigantamax.CanToggle(pokeindex, 0))
@@ -1993,7 +2007,7 @@ internal const int MaxGameID_5 = 23; // B2
                 {
                     // loop only for urshifu since it has 2 gigantamax forms
                     byte j = 0; // urshifu has no normal form
-                    byte k = i;
+                    byte k = l;
                     while (j < pi9bis.FormCount)
                     {
                         XmlElement fxe = doc.CreateElement("Form");
