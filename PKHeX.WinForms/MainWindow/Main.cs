@@ -2053,6 +2053,8 @@ internal const int MaxGameID_5 = 23; // B2
         string rootpath = @"E:\Projets\Pokemon\SpriteWork\BDD\";
         string filename = "expandedDex.xml";
         string formsfilename = "expandedForms.xml";
+        string csvFilename = "poke.csv";
+        string csvFormesFilename = "poke2.csv";
 
         XmlDocument doc = new XmlDocument();
         doc.LoadXml("<Pokemons></Pokemons>");
@@ -2081,6 +2083,10 @@ internal const int MaxGameID_5 = 23; // B2
         ushort laend = 905;
         ushort G9start = 906;
         ushort G9end = 1025;
+
+        _csv = "";
+        _formesCsv = "";
+
         while (fullgenstart <= G9end)
         {
             if (fullgenstart >= G6start)
@@ -2106,5 +2112,9 @@ internal const int MaxGameID_5 = 23; // B2
         }
         doc.Save(rootpath + filename);
         fdoc.Save(rootpath + formsfilename);
+
+        // Export CSV files
+        File.WriteAllText(rootpath + csvFilename, _csv, System.Text.Encoding.UTF8);
+        File.WriteAllText(rootpath + csvFormesFilename, _formesCsv, System.Text.Encoding.UTF8);
     }
 }
