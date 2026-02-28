@@ -1992,7 +1992,12 @@ internal const int MaxGameID_5 = 23; // B2
                 if (i < formNamesEn.Length)
                     fxe.AppendChild(CreateElt(doc, "FormName_En", formNamesEn[i]));
                 if (i < formNamesFr.Length)
+                {
                     fxe.AppendChild(CreateElt(doc, "FormName_Fr", formNamesFr[i]));
+                    _formesCsv += pokeindex + "," + SpeciesName.GetSpeciesName(pokeindex, 3) + " - " + formNamesFr[i] + "\r";
+                }
+                else
+                    _formesCsv += pokeindex + "," + SpeciesName.GetSpeciesName(pokeindex, 3) + " - forme " + i + "\r";
 
                 PersonalInfo9ZA pi9f = za.GetFormEntry(pokeindex, i);
                 fxe = FromGen9(doc, pi9f, fxe, false);
@@ -2050,7 +2055,8 @@ internal const int MaxGameID_5 = 23; // B2
     private void exportDexToolStripMenuItem_Click(object sender, EventArgs e)
     {
         // transform pokémons from Gen 6 Ton Gen 9 into Gen 5 format
-        string rootpath = @"E:\Projets\Pokemon\SpriteWork\BDD\";
+        string rootpath = @"D:\ERWAN\Pokemon\SpriteWork\BDD\";
+        //string rootpath = @"E:\Projets\Pokemon\SpriteWork\BDD\";
         string filename = "expandedDex.xml";
         string formsfilename = "expandedForms.xml";
         string csvFilename = "poke.csv";
@@ -2089,6 +2095,13 @@ internal const int MaxGameID_5 = 23; // B2
 
         while (fullgenstart <= G9end)
         {
+            PersonalTable9ZA za = PersonalTable.ZA; // legend z-a
+            PersonalInfo9ZA pi9bis = za.GetFormEntry(fullgenstart, 99);
+            _csv += fullgenstart + "," + SpeciesName.GetSpeciesName(fullgenstart, 3) + "\r";
+            //xe.AppendChild(CreateElt(doc, "NoDex", pokeindex.ToString())); // 2 = en
+            //xe.AppendChild(CreateElt(doc, "Name_En", SpeciesName.GetSpeciesName(pokeindex, 2))); // 2 = en
+            //xe.AppendChild(CreateElt(doc, "Name_Fr", SpeciesName.GetSpeciesName(pokeindex, 3))); // 3 = fr
+
             if (fullgenstart >= G6start)
             {
                 XmlElement xe = CreateGen5PokeNode(doc, fullgenstart);
@@ -2100,8 +2113,8 @@ internal const int MaxGameID_5 = 23; // B2
                 fdoc.DocumentElement.AppendChild(fxe);
             /*
              * TO DO : 
-             * create poke.csv
-             * add gigantamax formes
+             * x create poke.csv
+             * x add gigantamax formes
              * Translate to 5G
              * tm
              * move tutors
@@ -2114,7 +2127,7 @@ internal const int MaxGameID_5 = 23; // B2
         fdoc.Save(rootpath + formsfilename);
 
         // Export CSV files
-        File.WriteAllText(rootpath + csvFilename, _csv, System.Text.Encoding.UTF8);
-        File.WriteAllText(rootpath + csvFormesFilename, _formesCsv, System.Text.Encoding.UTF8);
+        File.WriteAllText(rootpath + csvFilename, _csv, System.Text.Encoding.GetEncoding("shift_jis"));
+        File.WriteAllText(rootpath + csvFormesFilename, _formesCsv, System.Text.Encoding.GetEncoding("shift_jis"));
     }
 }

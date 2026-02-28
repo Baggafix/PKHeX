@@ -34,6 +34,9 @@ internal static class Program
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 #endif
+        // Register CodePagesEncodingProvider to enable encodings like shift_jis
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Settings = PKHeXSettings.GetSettings(PathConfig);
